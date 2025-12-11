@@ -75,4 +75,4 @@ Desktop.ini
 
 # Application Properties (민감 정보 포함)
 # 주의: 이미 Git에 올라간 경우 별도 처리 필요
-# src/main/resources/application.properties
+src/main/resources/application.properties
