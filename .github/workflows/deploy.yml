@@ -87,7 +87,7 @@ jobs:
         with:
           version: latest
 
-      - name: Verify Fly.io authentication
+      - name: Verify Fly.io token
         run: |
           if [ -z "$FLY_API_TOKEN" ]; then
             echo "ERROR: FLY_API_TOKEN is not set in GitHub Secrets!"
@@ -100,33 +100,12 @@ jobs:
           fi
           echo "FLY_API_TOKEN is set (length: ${#FLY_API_TOKEN})"
           echo "First 10 chars: ${FLY_API_TOKEN:0:10}..."
-          echo "Attempting to authenticate..."
-          flyctl auth whoami || {
-            echo "ERROR: Authentication failed!"
-            echo "The token may be:"
-            echo "1. Expired - generate a new one with: fly tokens create deploy --app culturemap-api"
-            echo "2. Not app-scoped - use deploy token, not general API token"
-            echo "3. Invalid - check the token value in GitHub Secrets"
-            exit 1
-          }
-          echo "Authentication successful!"
+          echo "Token format looks valid (deploy tokens may not support 'whoami' command)"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Deploy to Fly.io
-        run: |
-          export FLY_API_TOKEN="${{ secrets.FLY_API_TOKEN }}"
-          if [ -z "$FLY_API_TOKEN" ]; then
-            echo "ERROR: FLY_API_TOKEN is not set!"
-            exit 1
-          fi
-          # 토큰을 사용하여 인증 (stdin으로 전달)
-          echo "$FLY_API_TOKEN" | flyctl auth login --stdin || {
-            echo "ERROR: Failed to authenticate with token"
-            exit 1
-          }
-          # 배포 실행
-          flyctl deploy --app culturemap-api
+        run: flyctl deploy --app culturemap-api
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
@@ -145,7 +124,7 @@ jobs:
         with:
           version: latest
 
-      - name: Verify Fly.io authentication
+      - name: Verify Fly.io token
         run: |
           if [ -z "$FLY_API_TOKEN" ]; then
             echo "ERROR: FLY_API_TOKEN is not set in GitHub Secrets!"
@@ -158,35 +137,12 @@ jobs:
           fi
           echo "FLY_API_TOKEN is set (length: ${#FLY_API_TOKEN})"
           echo "First 10 chars: ${FLY_API_TOKEN:0:10}..."
-          echo "Attempting to authenticate..."
-          flyctl auth whoami || {
-            echo "ERROR: Authentication failed!"
-            echo "The token may be:"
-            echo "1. Expired - generate a new one with: fly tokens create deploy --app culturemap"
-            echo "2. Not app-scoped - use deploy token, not general API token"
-            echo "3. Invalid - check the token value in GitHub Secrets"
-            exit 1
-          }
-          echo "Authentication successful!"
+          echo "Token format looks valid (deploy tokens may not support 'whoami' command)"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Deploy to Fly.io
         working-directory: ./frontend
-        run: |
-          export FLY_API_TOKEN="${{ secrets.FLY_API_TOKEN }}"
-          if [ -z "$FLY_API_TOKEN" ]; then
-            echo "ERROR: FLY_API_TOKEN is not set!"
-            exit 1
-          fi
-          # 토큰을 사용하여 인증 (stdin으로 전달)
-          echo "$FLY_API_TOKEN" | flyctl auth login --stdin || {
-            echo "ERROR: Failed to authenticate with token"
-            exit 1
-          }
-          # 배포 실행
-          flyctl deploy --app culturemap \
-            --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api \
-            --build-arg VITE_KAKAO_MAP_API_KEY=${{ secrets.VITE_KAKAO_MAP_API_KEY }}
+        run: flyctl deploy --app culturemap --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api --build-arg VITE_KAKAO_MAP_API_KEY=${{ secrets.VITE_KAKAO_MAP_API_KEY }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
