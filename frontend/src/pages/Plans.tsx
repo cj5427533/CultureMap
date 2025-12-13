@@ -320,7 +320,7 @@ const MyHistorySection = () => {
                     }}
                   >
                     <img
-                      src={history.imageUrl.startsWith('http') ? history.imageUrl : `http://localhost:8080${history.imageUrl}`}
+                      src={history.imageUrl.startsWith('http') ? history.imageUrl : history.imageUrl}
                       alt={`History ${history.displayOrder}`}
                       className="w-full h-80 object-contain bg-gray-100"
                       onError={(e) => {
@@ -383,7 +383,7 @@ const MyHistorySection = () => {
                     }}
                   >
                     <img
-                      src={history.imageUrl.startsWith('http') ? history.imageUrl : `http://localhost:8080${history.imageUrl}`}
+                      src={history.imageUrl.startsWith('http') ? history.imageUrl : history.imageUrl}
                       alt={`History ${history.displayOrder}`}
                       className="w-full h-64 object-contain bg-gray-100"
                       onError={(e) => {
@@ -493,7 +493,7 @@ const HistoryModal = ({ histories, onClose }: { histories: History[]; onClose: (
                 className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105"
               >
                 <img
-                  src={history.imageUrl.startsWith('http') ? history.imageUrl : `http://localhost:8080${history.imageUrl}`}
+                  src={history.imageUrl.startsWith('http') ? history.imageUrl : history.imageUrl}
                   alt={`History ${history.displayOrder}`}
                   className="w-full h-64 object-cover"
                   onError={(e) => {
