@@ -7,19 +7,15 @@ import { planService } from '../services/planService';
 import { authService } from '../services/authService';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import type { Place } from '../types/index';
+import type { Place, Plan } from '../types/index';
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
+// Kakao Maps 타입은 types/kakao.d.ts에서 정의됨
 
 export const HomeMap = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const infoWindowsRef = useRef<any[]>([]);
+  const mapInstanceRef = useRef<Window['kakao']['maps']['Map'] | null>(null);
+  const markersRef = useRef<Window['kakao']['maps']['Marker'][]>([]);
+  const infoWindowsRef = useRef<Window['kakao']['maps']['InfoWindow'][]>([]);
   const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
   const [nearbyPlaces, setNearbyPlaces] = useState<KakaoPlace[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +28,7 @@ export const HomeMap = () => {
   const [planTitle, setPlanTitle] = useState<string>('');
   const [addingToPlan, setAddingToPlan] = useState(false);
   const [modalStep, setModalStep] = useState<'date' | 'plan-select' | 'plan-create' | 'time'>('date');
-  const [existingPlans, setExistingPlans] = useState<any[]>([]);
+  const [existingPlans, setExistingPlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);
@@ -71,8 +67,9 @@ export const HomeMap = () => {
       const places = await kakaoLocalService.searchNearbyCulturePlaces(lat, lng, radius);
       setNearbyPlaces(places);
       applyFilters(places);
-    } catch (err: any) {
-      setError(err.message || '주변 문화시설을 불러오는데 실패했습니다.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '주변 문화시설을 불러오는데 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -158,7 +155,7 @@ export const HomeMap = () => {
         }));
         
         setSearchResults(convertedResults);
-      } catch (err: any) {
+      } catch (err) {
         console.error('장소 검색 실패:', err);
         setSearchResults([]);
       } finally {
@@ -359,7 +356,7 @@ export const HomeMap = () => {
         // 플랜이 여러 개면 선택 화면
         setModalStep('plan-select');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('플랜 조회 실패:', err);
       alert('플랜을 조회하는데 실패했습니다.');
     } finally {
@@ -432,9 +429,11 @@ export const HomeMap = () => {
       setExistingPlans([]);
       setSelectedPlanId(null);
       setShowCreateConfirm(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error('플랜 생성 실패:', err);
-      const statusCode = err.response?.status;
+      const statusCode = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { status?: number } }).response?.status 
+        : undefined;
       const errorCode = err.code;
       const errorMessage = err.response?.data?.message || err.message || '플랜 생성에 실패했습니다.';
       
@@ -514,9 +513,11 @@ export const HomeMap = () => {
       setExistingPlans([]);
       setSelectedPlanId(null);
       setShowCreateConfirm(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error('플랜에 추가 실패:', err);
-      const statusCode = err.response?.status;
+      const statusCode = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { status?: number } }).response?.status 
+        : undefined;
       const errorCode = err.code;
       const errorMessage = err.response?.data?.message || err.message || '플랜에 추가하는데 실패했습니다.';
       
@@ -582,7 +583,9 @@ export const HomeMap = () => {
       console.error('지도 초기화 실패:', err);
       setError('지도를 초기화하는데 실패했습니다: ' + (err as Error).message);
     }
-  }, [latitude, longitude, loadNearbyPlaces]);
+    // loadNearbyPlaces는 useCallback으로 감싸져 있어서 의존성에 포함하지 않아도 됨
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latitude, longitude]);
 
   useEffect(() => {
     if (geoLoading || !latitude || !longitude) {
@@ -625,10 +628,8 @@ export const HomeMap = () => {
       script.remove();
     });
     
-    // window.kakao도 초기화
-    if (window.kakao) {
-      delete (window as any).kakao;
-    }
+    // window.kakao는 전역 객체이므로 삭제하지 않음
+    // 다른 컴포넌트에서도 사용할 수 있음
 
     // Kakao Maps SDK 로드 (제공된 예시 코드 반영)
     const script = document.createElement('script');

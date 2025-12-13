@@ -13,17 +13,13 @@ interface KakaoMapProps {
   routePath?: RoutePoint[];
 }
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
+// Kakao Maps 타입은 types/kakao.d.ts에서 정의됨
 
 export const KakaoMap = ({ places, center, height = '400px', routePath }: KakaoMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const polylineRef = useRef<any>(null);
+  const mapInstanceRef = useRef<Window['kakao']['maps']['Map'] | null>(null);
+  const markersRef = useRef<Window['kakao']['maps']['Marker'][]>([]);
+  const polylineRef = useRef<Window['kakao']['maps']['Polyline'] | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;

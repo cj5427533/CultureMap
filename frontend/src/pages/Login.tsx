@@ -21,8 +21,11 @@ export const Login = () => {
     try {
       await authService.login(formData);
       navigate('/', { replace: true });
-    } catch (err: any) {
-      setError(err.response?.data?.message || '로그인에 실패했습니다.');
+    } catch (err) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '로그인에 실패했습니다.'
+        : '로그인에 실패했습니다.';
+      setError(errorMessage);
     }
   };
 

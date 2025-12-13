@@ -57,7 +57,7 @@ export const Plans = () => {
     try {
       await planService.deletePlan(id);
       loadPlans();
-    } catch (err) {
+    } catch {
       alert('삭제에 실패했습니다.');
     }
   };
@@ -200,6 +200,7 @@ const MyHistorySection = () => {
 
   useEffect(() => {
     loadHistories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadHistories = async () => {
@@ -234,10 +235,12 @@ const MyHistorySection = () => {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('히스토리 로드 실패:', err);
-      console.error('에러 상세:', err.response?.data);
-      setError(err.response?.data?.message || '히스토리를 불러오는데 실패했습니다.');
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '히스토리를 불러오는데 실패했습니다.'
+        : '히스토리를 불러오는데 실패했습니다.';
+      setError(errorMessage);
       setHistories([]);
     } finally {
       setLoading(false);

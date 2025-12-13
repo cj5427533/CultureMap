@@ -20,6 +20,7 @@ const AdminDashboard = () => {
     }
 
     loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   const loadStats = async () => {
@@ -28,9 +29,12 @@ const AdminDashboard = () => {
       setError(null);
       const data = await adminService.getStats();
       setStats(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('통계 로드 실패:', err);
-      if (err.response?.status === 403) {
+      const statusCode = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { status?: number } }).response?.status
+        : undefined;
+      if (statusCode === 403) {
         setError('관리자만 접근할 수 있습니다.');
         setTimeout(() => navigate('/'), 2000);
       } else {

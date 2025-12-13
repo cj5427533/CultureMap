@@ -25,7 +25,7 @@ export interface KakaoLocalResponse {
 import api from '../utils/api';
 
 // 백엔드가 문자열/객체/에러 HTML을 반환할 수 있으므로 안전하게 파싱
-const parseKakaoResponse = (raw: any, context: string): KakaoLocalResponse => {
+const parseKakaoResponse = (raw: unknown, context: string): KakaoLocalResponse => {
   if (typeof raw !== 'string') {
     return raw as KakaoLocalResponse;
   }
@@ -69,26 +69,36 @@ export const kakaoLocalService = {
       
       console.log('검색된 문화시설 수:', data.documents.length);
       return data.documents;
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { 
+        code?: string; 
+        message?: string; 
+        response?: { 
+          status?: number; 
+          statusText?: string; 
+          data?: { message?: string } 
+        }; 
+        config?: { url?: string } 
+      };
       console.error('주변 문화시설 검색 실패:', error);
       console.error('에러 상세:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        url: error.config?.url,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message,
+        url: err.config?.url,
       });
       
       // 네트워크 에러 처리
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ERR_CONNECTION_REFUSED') {
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error' || err.code === 'ERR_CONNECTION_REFUSED') {
         throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
       }
       
-      if (error.response?.status === 403) {
+      if (err.response?.status === 403) {
         throw new Error('접근 권한이 없습니다. 로그인 상태를 확인해주세요.');
       }
       
-      throw new Error(error.response?.data?.message || error.message || '주변 문화시설 검색에 실패했습니다.');
+      throw new Error(err.response?.data?.message || err.message || '주변 문화시설 검색에 실패했습니다.');
     }
   },
 
@@ -120,26 +130,36 @@ export const kakaoLocalService = {
       
       console.log('키워드 검색 결과:', data.documents.length);
       return data.documents;
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { 
+        code?: string; 
+        message?: string; 
+        response?: { 
+          status?: number; 
+          statusText?: string; 
+          data?: { message?: string } 
+        }; 
+        config?: { url?: string } 
+      };
       console.error('키워드 검색 실패:', error);
       console.error('에러 상세:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        url: error.config?.url,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message,
+        url: err.config?.url,
       });
       
       // 네트워크 에러 처리
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ERR_CONNECTION_REFUSED') {
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error' || err.code === 'ERR_CONNECTION_REFUSED') {
         throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
       }
       
-      if (error.response?.status === 403) {
+      if (err.response?.status === 403) {
         throw new Error('접근 권한이 없습니다. 로그인 상태를 확인해주세요.');
       }
       
-      throw new Error(error.response?.data?.message || error.message || '키워드 검색에 실패했습니다.');
+      throw new Error(err.response?.data?.message || err.message || '키워드 검색에 실패했습니다.');
     }
   },
 };

@@ -29,6 +29,7 @@ export const PlanForm = () => {
       loadPlan(parseInt(id));
     }
     loadPlaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEdit]);
 
   const loadPlan = async (planId: number) => {
@@ -55,7 +56,7 @@ export const PlanForm = () => {
         visitTimes,
       });
       setSelectedPlaces(sortedPlaces);
-    } catch (err) {
+    } catch {
       alert('플랜을 불러오는데 실패했습니다.');
       navigate('/plans');
     }
@@ -173,8 +174,11 @@ export const PlanForm = () => {
       const createdPlan = await planService.createPlan(submitData);
       alert('플랜이 생성되었습니다! 이제 장소를 추가할 수 있습니다.');
       navigate(`/plans/${createdPlan.id}/edit`);
-    } catch (err: any) {
-      alert(err.response?.data?.message || '플랜 생성에 실패했습니다.');
+    } catch (err) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '플랜 생성에 실패했습니다.'
+        : '플랜 생성에 실패했습니다.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -216,8 +220,11 @@ export const PlanForm = () => {
         alert('플랜이 생성되었습니다!');
         navigate('/plans');
       }
-    } catch (err: any) {
-      alert(err.response?.data?.message || '저장에 실패했습니다.');
+    } catch (err) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '저장에 실패했습니다.'
+        : '저장에 실패했습니다.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -26,6 +26,7 @@ export const PlanDetail = () => {
     if (id) {
       loadPlan(parseInt(id));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadPlan = async (planId: number) => {
@@ -39,7 +40,7 @@ export const PlanDetail = () => {
         return a.visitTime.localeCompare(b.visitTime);
       });
       setPlan({ ...data, places: sortedPlaces });
-    } catch (err) {
+    } catch {
       alert('플랜을 불러오는데 실패했습니다.');
       navigate('/plans');
     } finally {
@@ -126,13 +127,13 @@ export const PlanDetail = () => {
       }
       
       setSegmentRoutes(newSegmentRoutes);
-    } catch (err: any) {
+    } catch (err) {
       console.error('경로 조회 실패:', err);
-      const message =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        '경로를 불러오지 못했습니다.';
+      const message = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string; error?: string } } }).response?.data?.message ||
+          (err as { response?: { data?: { message?: string; error?: string } } }).response?.data?.error ||
+          (err instanceof Error ? err.message : '경로를 불러오지 못했습니다.')
+        : '경로를 불러오지 못했습니다.';
       setRouteError(message);
     } finally {
       setRouteLoading(false);
@@ -531,7 +532,7 @@ export const PlanDetail = () => {
                   setShowInviteModal(false);
                   setInviteEmail('');
                   setInviteRole('VIEWER');
-                } catch (err: any) {
+                } catch {
                   console.error('멤버 초대 실패:', err);
                   alert(err.response?.data?.message || err.message || '멤버 초대에 실패했습니다.');
                 } finally {

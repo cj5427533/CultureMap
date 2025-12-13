@@ -17,12 +17,15 @@ export const useGeolocation = () => {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setState({
-        latitude: null,
-        longitude: null,
-        error: 'Geolocation이 지원되지 않는 브라우저입니다.',
-        loading: false,
-      });
+      // setState를 비동기로 처리
+      setTimeout(() => {
+        setState({
+          latitude: null,
+          longitude: null,
+          error: 'Geolocation이 지원되지 않는 브라우저입니다.',
+          loading: false,
+        });
+      }, 0);
       return;
     }
 
@@ -35,7 +38,7 @@ export const useGeolocation = () => {
           loading: false,
         });
       },
-      (_error) => {
+      () => {
         setState({
           latitude: null,
           longitude: null,

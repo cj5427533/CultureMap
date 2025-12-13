@@ -55,7 +55,7 @@ export const authService = {
         return response.data;
       }
       return null;
-    } catch (error) {
+    } catch {
       // Refresh token도 만료된 경우
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');

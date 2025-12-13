@@ -33,6 +33,7 @@ export const PostDetail = () => {
       loadComments(parseInt(id));
       setShareUrl(`${window.location.origin}/posts/${id}`);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // OG 태그 동적 추가
@@ -72,7 +73,7 @@ export const PostDetail = () => {
     try {
       const data = await postService.getPost(postId);
       setPost(data);
-    } catch (err) {
+    } catch {
       alert('게시글을 불러오는데 실패했습니다.');
       navigate('/posts');
     } finally {
@@ -87,7 +88,7 @@ export const PostDetail = () => {
     try {
       await postService.deletePost(post.id);
       navigate('/posts');
-    } catch (err) {
+    } catch {
       alert('삭제에 실패했습니다.');
     }
   };
@@ -121,9 +122,12 @@ export const PostDetail = () => {
       setPost(updatedPost);
       setShowEditModal(false);
       alert('게시글이 수정되었습니다!');
-    } catch (err: any) {
+    } catch (err) {
       console.error('게시글 수정 실패:', err);
-      const message = err.response?.data?.message || err.message || '게시글 수정에 실패했습니다.';
+      const message = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || 
+          (err instanceof Error ? err.message : '게시글 수정에 실패했습니다.')
+        : '게시글 수정에 실패했습니다.';
       alert(message);
     } finally {
       setSubmitting(false);
@@ -135,8 +139,8 @@ export const PostDetail = () => {
     try {
       const data = await commentService.getComments(postId);
       setComments(data);
-    } catch (err) {
-      console.error('댓글 로드 실패:', err);
+    } catch {
+      console.error('댓글 로드 실패');
     } finally {
       setLoadingComments(false);
     }
@@ -160,9 +164,12 @@ export const PostDetail = () => {
       // 게시글 정보도 새로고침하여 평균 별점 업데이트
       const updatedPost = await postService.getPost(post.id);
       setPost(updatedPost);
-    } catch (err: any) {
+    } catch (err) {
       console.error('댓글 작성 실패:', err);
-      alert(err.response?.data?.message || '댓글 작성에 실패했습니다.');
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '댓글 작성에 실패했습니다.'
+        : '댓글 작성에 실패했습니다.';
+      alert(errorMessage);
     } finally {
       setSubmittingComment(false);
     }
@@ -175,9 +182,12 @@ export const PostDetail = () => {
     try {
       await commentService.deleteComment(commentId);
       loadComments(post.id);
-    } catch (err: any) {
+    } catch (err) {
       console.error('댓글 삭제 실패:', err);
-      alert(err.response?.data?.message || '댓글 삭제에 실패했습니다.');
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '댓글 삭제에 실패했습니다.'
+        : '댓글 삭제에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 

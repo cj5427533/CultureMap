@@ -113,9 +113,12 @@ export const Posts = () => {
       setShareForm({ planId: 0, title: '', description: '' });
       loadPosts();
       navigate(`/posts/${createdPost.id}`);
-    } catch (err: any) {
+    } catch (err) {
       console.error('게시글 작성 실패:', err);
-      const message = err.response?.data?.message || err.message || '게시글 작성에 실패했습니다.';
+      const message = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || 
+          (err instanceof Error ? err.message : '게시글 작성에 실패했습니다.')
+        : '게시글 작성에 실패했습니다.';
       alert(message);
     } finally {
       setSubmitting(false);
