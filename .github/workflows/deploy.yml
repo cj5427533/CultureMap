@@ -105,9 +105,7 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Deploy to Fly.io
-        run: flyctl deploy --app culturemap-api
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --app culturemap-api --token "${{ secrets.FLY_API_TOKEN }}"
 
   deploy-frontend:
     name: Deploy Frontend to Fly.io
@@ -143,6 +141,4 @@ jobs:
 
       - name: Deploy to Fly.io
         working-directory: ./frontend
-        run: flyctl deploy --app culturemap --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api --build-arg VITE_KAKAO_MAP_API_KEY=${{ secrets.VITE_KAKAO_MAP_API_KEY }}
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --app culturemap --token "${{ secrets.FLY_API_TOKEN }}" --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api --build-arg VITE_KAKAO_MAP_API_KEY=${{ secrets.VITE_KAKAO_MAP_API_KEY }}
