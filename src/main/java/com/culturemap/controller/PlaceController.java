@@ -23,7 +23,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/places")
-@RequiredArgsConstructor
 public class PlaceController {
 
     private final PlaceService placeService;
@@ -31,6 +30,19 @@ public class PlaceController {
     private final RateLimitService rateLimitService;
     private final CacheService cacheService;
     private final MemberRepository memberRepository;
+
+    public PlaceController(
+            PlaceService placeService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ExternalApiService externalApiService,
+            RateLimitService rateLimitService,
+            CacheService cacheService,
+            MemberRepository memberRepository) {
+        this.placeService = placeService;
+        this.externalApiService = externalApiService;
+        this.rateLimitService = rateLimitService;
+        this.cacheService = cacheService;
+        this.memberRepository = memberRepository;
+    }
 
     @GetMapping
     public ResponseEntity<List<PlaceResponse>> searchPlaces(
@@ -118,6 +130,10 @@ public class PlaceController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
         }
         
+        if (externalApiService == null) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(null);
+        }
+        
         String response = externalApiService.searchNearbyCulturePlaces(lng, lat, radius);
         return ResponseEntity.ok(response);
     }
@@ -145,6 +161,10 @@ public class PlaceController {
             Map<String, String> error = new HashMap<>();
             error.put("message", "검색 API 호출 횟수를 초과했습니다. 1분 후 다시 시도해주세요.");
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+        }
+        
+        if (externalApiService == null) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(null);
         }
         
         String response = externalApiService.searchKeywordNearby(query, lng, lat, radius);

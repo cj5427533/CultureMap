@@ -2,13 +2,13 @@ package com.culturemap.service;
 
 import com.culturemap.dto.AdminStatsResponse;
 import com.culturemap.repository.*;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
 public class AdminStatsService {
@@ -18,8 +18,25 @@ public class AdminStatsService {
     private final PlanPostRepository planPostRepository;
     private final CommentRepository commentRepository;
     private final RatingRepository ratingRepository;
-    private final DirectionsService directionsService;
-    private final ExternalApiService externalApiService;
+    
+    @Autowired(required = false)
+    private DirectionsService directionsService;
+    
+    @Autowired(required = false)
+    private ExternalApiService externalApiService;
+
+    public AdminStatsService(
+            MemberRepository memberRepository,
+            PlanRepository planRepository,
+            PlanPostRepository planPostRepository,
+            CommentRepository commentRepository,
+            RatingRepository ratingRepository) {
+        this.memberRepository = memberRepository;
+        this.planRepository = planRepository;
+        this.planPostRepository = planPostRepository;
+        this.commentRepository = commentRepository;
+        this.ratingRepository = ratingRepository;
+    }
 
     public AdminStatsResponse getStats() {
         try {
@@ -35,18 +52,22 @@ public class AdminStatsService {
             long searchToday = 0;
             long searchTotal = 0;
             
-            try {
-                directionsToday = directionsService.getTodayCalls();
-                directionsTotal = directionsService.getTotalCalls();
-            } catch (Exception e) {
-                log.warn("Directions API 통계 조회 실패", e);
+            if (directionsService != null) {
+                try {
+                    directionsToday = directionsService.getTodayCalls();
+                    directionsTotal = directionsService.getTotalCalls();
+                } catch (Exception e) {
+                    log.warn("Directions API 통계 조회 실패", e);
+                }
             }
             
-            try {
-                searchToday = externalApiService.getTodaySearchCalls();
-                searchTotal = externalApiService.getTotalSearchCalls();
-            } catch (Exception e) {
-                log.warn("Search API 통계 조회 실패", e);
+            if (externalApiService != null) {
+                try {
+                    searchToday = externalApiService.getTodaySearchCalls();
+                    searchTotal = externalApiService.getTotalSearchCalls();
+                } catch (Exception e) {
+                    log.warn("Search API 통계 조회 실패", e);
+                }
             }
 
             AdminStatsResponse.ApiUsageStats apiUsage = AdminStatsResponse.ApiUsageStats.builder()

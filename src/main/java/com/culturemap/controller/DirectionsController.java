@@ -13,13 +13,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/directions")
-@RequiredArgsConstructor
 public class DirectionsController {
 
     private final DirectionsService directionsService;
 
+    public DirectionsController(@org.springframework.beans.factory.annotation.Autowired(required = false) DirectionsService directionsService) {
+        this.directionsService = directionsService;
+    }
+
     @PostMapping
     public ResponseEntity<DirectionsResponse> getDirections(@Valid @RequestBody DirectionsRequest request) {
+        if (directionsService == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(null);
+        }
         DirectionsResponse response = directionsService.getCarDirections(request);
         return ResponseEntity.ok(response);
     }
