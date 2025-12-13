@@ -66,7 +66,7 @@ export const kakaoLocalService = {
       
       // 네트워크 에러 처리
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ERR_CONNECTION_REFUSED') {
-        throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요. (포트 8080)');
+        throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
       }
       
       if (error.response?.status === 403) {
@@ -120,7 +120,7 @@ export const kakaoLocalService = {
       
       // 네트워크 에러 처리
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ERR_CONNECTION_REFUSED') {
-        throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요. (포트 8080)');
+        throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
       }
       
       if (error.response?.status === 403) {
