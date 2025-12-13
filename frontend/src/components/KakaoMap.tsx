@@ -239,7 +239,7 @@ export const KakaoMap = ({ places, center, height = '400px', routePath }: KakaoM
     // 새 스크립트 추가
     const script = document.createElement('script');
     script.async = true;
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,geometry`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&libraries=services,geometry`;
     script.onload = () => {
       initializeMap();
     };

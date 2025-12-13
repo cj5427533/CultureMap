@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+// 환경 변수에서 API URL 가져오기 (Vite는 import.meta.env 사용)
+// 프록시 사용 시 상대 경로 사용
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // 로딩 상태 관리 (간단한 카운터 방식)
 let loadingCount = 0;

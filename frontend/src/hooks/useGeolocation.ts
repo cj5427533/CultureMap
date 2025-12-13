@@ -35,7 +35,7 @@ export const useGeolocation = () => {
           loading: false,
         });
       },
-      (error) => {
+      (_error) => {
         setState({
           latitude: null,
           longitude: null,

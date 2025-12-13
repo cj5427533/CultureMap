@@ -1,0 +1,14 @@
+# 프론트엔드 개발 모드 Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# package.json 복사 및 의존성 설치
+COPY package*.json ./
+RUN npm ci
+
+# 포트 노출 (Vite 개발 서버 기본 포트)
+EXPOSE 5173
+
+# 개발 모드에서는 npm run dev로 실행 (소스 코드는 볼륨 마운트)
+# 코드 변경 시 자동으로 Hot Reload 됨

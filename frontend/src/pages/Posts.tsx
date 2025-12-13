@@ -148,39 +148,40 @@ export const Posts = () => {
         </div>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">공유 게시판</h1>
-            <p className="text-gray-600">다른 사용자들이 공유한 여행 플랜을 확인해보세요</p>
+      {/* 여백과 정렬: 메인 컨텐츠 */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        {/* 시각적 위계: 헤더 영역 */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 md:mb-8 lg:mb-12 gap-4 md:gap-6">
+          <div className="flex-1">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 md:mb-3">공유 게시판</h1>
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed">다른 사용자들이 공유한 여행 플랜을 확인해보세요</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             {isAuthenticated && (
-              <Button variant="primary" onClick={handleOpenShareModal} className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+              <Button variant="primary" onClick={handleOpenShareModal} className="w-full sm:w-auto shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                 ✨ 게시글 작성하기
               </Button>
             )}
-            <Link to="/plans">
-              <Button variant="success" className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+            <Link to="/plans" className="w-full sm:w-auto">
+              <Button variant="success" className="w-full sm:w-auto shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                 내 플랜
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* 게시글 검색 입력창 (디바운스 적용) */}
-        <div className="mb-6">
+        {/* 가독성과 정렬: 게시글 검색 입력창 (디바운스 적용) */}
+        <div className="mb-6 md:mb-8">
           <div className="relative">
             <input
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               placeholder="제목, 내용, 작성자로 검색..."
-              className="w-full px-4 py-3 pl-10 border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all shadow-sm"
+              className="w-full px-4 md:px-5 py-3 md:py-3.5 pl-10 md:pl-12 border-2 border-green-200 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm text-base md:text-lg"
             />
             <svg
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+              className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 text-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -195,26 +196,27 @@ export const Posts = () => {
             {searchKeyword && (
               <button
                 onClick={() => setSearchKeyword('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 md:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 touch-target"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
           </div>
           {debouncedSearchKeyword && (
-            <p className="mt-2 text-sm text-gray-600">
-              "{debouncedSearchKeyword}" 검색 결과: {posts.length}개
+            <p className="mt-3 text-sm md:text-base text-gray-700 font-medium">
+              "{debouncedSearchKeyword}" 검색 결과: <span className="text-green-600 font-bold">{posts.length}개</span>
             </p>
           )}
         </div>
 
+        {/* 리듬과 균형: 게시글 목록 */}
         {posts.length === 0 ? (
-          <Card className="text-center py-16 border-2 border-green-200 bg-gradient-to-br from-white to-green-50">
-            <div className="text-6xl mb-4">🌱</div>
-            <p className="text-xl text-gray-700 mb-2 font-semibold">아직 공유된 플랜이 없습니다.</p>
-            <p className="text-gray-600 mb-6">첫 번째 게시글을 작성해보세요!</p>
+          <Card className="text-center py-12 md:py-16 lg:py-20 border-2 border-green-200 bg-gradient-to-br from-white to-green-50">
+            <div className="text-5xl md:text-6xl lg:text-7xl mb-4 md:mb-6">🌱</div>
+            <p className="text-xl md:text-2xl text-gray-800 mb-2 md:mb-3 font-bold">아직 공유된 플랜이 없습니다.</p>
+            <p className="text-base md:text-lg text-gray-700 mb-6 md:mb-8">첫 번째 게시글을 작성해보세요!</p>
             {isAuthenticated && (
               <Button variant="primary" onClick={handleOpenShareModal} className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                 첫 게시글 작성하기
@@ -222,37 +224,41 @@ export const Posts = () => {
             )}
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {posts.map((post) => (
               <Link key={post.id} to={`/posts/${post.id}`} className="block transform hover:scale-105 transition-all duration-300">
                 <Card className="h-full border-2 border-green-200 hover:border-green-400 bg-gradient-to-br from-white to-green-50/30">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-xl font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{post.title}</h3>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  {/* 타이포그래피: 게시글 제목 */}
+                  <div className="flex items-start justify-between mb-3 md:mb-4">
+                    <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 flex-1 pr-2 line-clamp-2 leading-tight">{post.title}</h3>
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-bold text-sm md:text-base flex-shrink-0 shadow-md">
                       📍
                     </div>
                   </div>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span className="font-semibold text-green-600">작성자:</span>
-                      <span>{post.authorNickname}</span>
+                  {/* 여백과 정렬: 게시글 정보 */}
+                  <div className="space-y-2 md:space-y-3 mb-4 md:mb-5">
+                    <div className="flex items-center gap-2 md:gap-3 text-sm md:text-base text-gray-700">
+                      <span className="font-bold text-green-600">작성자:</span>
+                      <span className="font-semibold">{post.authorNickname}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span className="font-semibold text-green-600">날짜:</span>
-                      <span>{post.plan.planDate}</span>
+                    <div className="flex items-center gap-2 md:gap-3 text-sm md:text-base text-gray-700">
+                      <span className="font-bold text-green-600">날짜:</span>
+                      <span className="font-semibold">{post.plan.planDate}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span className="font-semibold text-green-600">장소:</span>
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">{post.plan.places.length}개</span>
+                    <div className="flex items-center gap-2 md:gap-3 text-sm md:text-base text-gray-700">
+                      <span className="font-bold text-green-600">장소:</span>
+                      <span className="bg-green-100 text-green-700 px-2 md:px-3 py-1 md:py-1.5 rounded-full font-bold">{post.plan.places.length}개</span>
                     </div>
                   </div>
+                  {/* 가독성: 게시글 설명 */}
                   {post.description && (
-                    <div className="bg-white/60 rounded-lg p-3 border border-green-100">
-                      <p className="text-gray-700 text-sm line-clamp-3">{post.description}</p>
+                    <div className="bg-white/60 rounded-lg md:rounded-xl p-3 md:p-4 border border-green-100 mb-4 md:mb-5">
+                      <p className="text-gray-700 text-sm md:text-base line-clamp-3 leading-relaxed">{post.description}</p>
                     </div>
                   )}
-                  <div className="mt-4 pt-4 border-t border-green-200">
-                    <span className="text-green-600 text-sm font-semibold">자세히 보기 →</span>
+                  {/* 대비: 링크 표시 */}
+                  <div className="mt-4 md:mt-5 pt-4 md:pt-5 border-t-2 border-green-200">
+                    <span className="text-green-600 text-sm md:text-base font-bold">자세히 보기 →</span>
                   </div>
                 </Card>
               </Link>

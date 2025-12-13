@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { postService } from '../services/postService';
 import { commentService } from '../services/commentService';
-import type { PlanPost, PlanPostRequest, Comment, CommentRequest } from '../types/index';
+import type { PlanPost, PlanPostRequest, Comment } from '../types/index';
 import { authService } from '../services/authService';
 import { KakaoMap } from '../components/KakaoMap';
 import { Button } from '../components/ui/Button';
@@ -227,59 +227,61 @@ export const PostDetail = () => {
         </div>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* 게시글 정보 */}
-        <Card className="mb-6 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
-          <div className="flex justify-between items-start mb-6">
+      {/* 여백과 정렬: 메인 컨텐츠 */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        {/* 타이포그래피: 게시글 정보 */}
+        <Card className="mb-6 md:mb-8 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-6 md:mb-8 gap-4 md:gap-6">
             <div className="flex-1">
-              <h1 className="text-4xl font-bold mb-5 text-gray-800 leading-tight">{post.title}</h1>
-              <div className="flex flex-wrap gap-4 text-sm mb-4">
-                <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full">
-                  <span className="text-green-700 font-semibold">👤 작성자:</span>
-                  <span className="text-gray-800 font-bold">{post.authorNickname}</span>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-gray-900 leading-tight">{post.title}</h1>
+              <div className="flex flex-wrap gap-3 md:gap-4 text-sm md:text-base mb-4 md:mb-6">
+                <div className="flex items-center gap-2 bg-green-100 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-green-200">
+                  <span className="text-green-700 font-bold">👤 작성자:</span>
+                  <span className="text-gray-900 font-bold">{post.authorNickname}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full">
-                  <span className="text-green-700 font-semibold">📅 작성일:</span>
-                  <span className="text-gray-800">{new Date(post.createdAt).toLocaleString('ko-KR')}</span>
+                <div className="flex items-center gap-2 bg-green-100 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-green-200">
+                  <span className="text-green-700 font-bold">📅 작성일:</span>
+                  <span className="text-gray-800 font-semibold">{new Date(post.createdAt).toLocaleString('ko-KR')}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full">
-                  <span className="text-green-700 font-semibold">🗓️ 플랜 날짜:</span>
-                  <span className="text-gray-800 font-bold">{post.plan.planDate}</span>
+                <div className="flex items-center gap-2 bg-green-100 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-green-200">
+                  <span className="text-green-700 font-bold">🗓️ 플랜 날짜:</span>
+                  <span className="text-gray-900 font-bold">{post.plan.planDate}</span>
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 ml-4">
-              <Button variant="success" onClick={handleCopyShareLink} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+            {/* 정렬: 액션 버튼 - 모바일 최적화 */}
+            <div className="flex flex-wrap gap-2 md:gap-3">
+              <Button variant="success" onClick={handleCopyShareLink} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm">
                 🔗 공유하기
               </Button>
               {canEdit && (
                 <>
-                  <Button variant="warning" onClick={handleOpenEditModal} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                  <Button variant="warning" onClick={handleOpenEditModal} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm">
                     ✏️ 수정
                   </Button>
-                  <Button variant="danger" onClick={handleDelete} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                  <Button variant="danger" onClick={handleDelete} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm">
                     🗑️ 삭제
                   </Button>
                 </>
               )}
             </div>
           </div>
+          {/* 가독성: 게시글 설명 */}
           {post.description && (
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{post.description}</p>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl md:rounded-2xl p-4 md:p-5 lg:p-6 border-2 border-green-200 mb-4 md:mb-6">
+              <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{post.description}</p>
             </div>
           )}
-          {/* 평균 별점 표시 */}
+          {/* 대비: 평균 별점 표시 */}
           {post.averageRating && (
-            <div className="mt-4 pt-4 border-t-2 border-green-200">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold text-gray-700">평균 별점:</span>
+            <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t-2 border-green-200">
+              <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                <span className="text-sm md:text-base font-bold text-gray-800">평균 별점:</span>
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={`text-2xl ${
+                      className={`text-2xl md:text-3xl ${
                         star <= Math.round(post.averageRating!)
                           ? 'text-yellow-400'
                           : 'text-gray-200'
@@ -289,7 +291,7 @@ export const PostDetail = () => {
                     </span>
                   ))}
                 </div>
-                <span className="text-sm text-gray-600 font-semibold">
+                <span className="text-sm md:text-base text-gray-700 font-bold">
                   {post.averageRating.toFixed(1)}점 ({post.ratingCount || 0}명 평가)
                 </span>
               </div>
@@ -297,60 +299,64 @@ export const PostDetail = () => {
           )}
         </Card>
 
-        {/* 플랜 상세 */}
-        <Card className="mb-6 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
-          <div className="mb-6 pb-4 border-b-2 border-green-200">
-            <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-green-500">🗺️</span>
-              플랜 상세
+        {/* 리듬: 플랜 상세 */}
+        <Card className="mb-6 md:mb-8 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
+          <div className="mb-6 md:mb-8 pb-4 md:pb-6 border-b-2 border-green-200">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 flex items-center gap-2 md:gap-3">
+              <span className="text-green-500 text-3xl md:text-4xl">🗺️</span>
+              <span>플랜 상세</span>
             </h2>
           </div>
-          <div className="mb-6 flex flex-wrap gap-3">
-            <div className="bg-green-100 px-4 py-2 rounded-lg">
-              <p className="text-gray-700">
-                <span className="font-semibold text-green-700">날짜:</span> <span className="font-bold text-gray-800">{post.plan.planDate}</span>
+          {/* 여백과 정렬: 플랜 정보 */}
+          <div className="mb-6 md:mb-8 flex flex-wrap gap-3 md:gap-4">
+            <div className="bg-green-100 px-4 md:px-5 py-2 md:py-2.5 rounded-lg md:rounded-xl border border-green-200">
+              <p className="text-gray-800 text-sm md:text-base">
+                <span className="font-bold text-green-700">날짜:</span> <span className="font-bold text-gray-900">{post.plan.planDate}</span>
               </p>
             </div>
             {post.plan.title && (
-              <div className="bg-green-100 px-4 py-2 rounded-lg">
-                <p className="text-gray-700">
-                  <span className="font-semibold text-green-700">제목:</span> <span className="font-bold text-gray-800">{post.plan.title}</span>
+              <div className="bg-green-100 px-4 md:px-5 py-2 md:py-2.5 rounded-lg md:rounded-xl border border-green-200">
+                <p className="text-gray-800 text-sm md:text-base">
+                  <span className="font-bold text-green-700">제목:</span> <span className="font-bold text-gray-900">{post.plan.title}</span>
                 </p>
               </div>
             )}
           </div>
-          <div className="mb-4 pb-3 border-b border-green-200">
-            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-green-500">📍</span>
-              방문 장소 <span className="bg-green-500 text-white px-3 py-1 rounded-full text-lg">{post.plan.places.length}개</span>
+          <div className="mb-4 md:mb-6 pb-3 md:pb-4 border-b-2 border-green-200">
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2 md:gap-3">
+              <span className="text-green-500 text-2xl md:text-3xl">📍</span>
+              <span>방문 장소</span> <span className="bg-green-500 text-white px-3 md:px-4 py-1 md:py-1.5 rounded-full text-base md:text-lg font-bold">{post.plan.places.length}개</span>
             </h3>
           </div>
-          <div className="space-y-4">
+          {/* 리듬: 장소 목록 */}
+          <div className="space-y-4 md:space-y-6">
             {post.plan.places.map((place, index) => (
-              <div key={place.id} className="border-2 border-green-200 rounded-xl p-5 hover:border-green-400 hover:shadow-lg bg-gradient-to-r from-white to-green-50/50 transition-all transform hover:scale-[1.02]">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-md">
+              <div key={place.id} className="border-2 border-green-200 rounded-xl md:rounded-2xl p-4 md:p-5 lg:p-6 hover:border-green-400 hover:shadow-lg bg-gradient-to-r from-white to-green-50/50 transition-all transform hover:scale-[1.01]">
+                <div className="flex items-start gap-3 md:gap-4">
+                  {/* 대비: 번호 아이콘 */}
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center font-bold text-lg md:text-xl flex-shrink-0 shadow-lg">
                     {index + 1}
                   </div>
+                  {/* 가독성: 장소 정보 */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{getCategoryIcon(place.category)}</span>
-                      <h4 className="text-xl font-bold text-gray-900">{place.name}</h4>
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                      <span className="text-2xl md:text-3xl">{getCategoryIcon(place.category)}</span>
+                      <h4 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">{place.name}</h4>
                     </div>
                     {place.address && (
-                      <div className="flex items-start gap-2 mb-2">
-                        <span className="text-green-600 font-semibold text-sm mt-0.5">📍</span>
-                        <p className="text-sm text-gray-700">{place.address}</p>
+                      <div className="flex items-start gap-2 mb-2 md:mb-3">
+                        <span className="text-green-600 font-bold text-sm md:text-base mt-0.5">📍</span>
+                        <p className="text-sm md:text-base text-gray-700 leading-relaxed">{place.address}</p>
                       </div>
                     )}
                     {place.category && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-green-200 text-green-800 px-2 py-1 rounded-md text-xs font-semibold">{place.category}</span>
+                      <div className="flex items-center gap-2 mb-2 md:mb-3">
+                        <span className="bg-green-200 text-green-800 px-2 md:px-3 py-1 rounded-md text-xs md:text-sm font-bold">{place.category}</span>
                       </div>
                     )}
                     {place.description && (
-                      <div className="mt-3 pt-3 border-t border-green-200">
-                        <p className="text-sm text-gray-700 leading-relaxed">{place.description}</p>
+                      <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-green-200">
+                        <p className="text-sm md:text-base text-gray-700 leading-relaxed">{place.description}</p>
                       </div>
                     )}
                   </div>

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { planService } from '../services/planService';
-import { authService } from '../services/authService';
 import type { Plan, Place } from '../types/index';
 import { KakaoMap } from '../components/KakaoMap';
 import { directionService, type DirectionsLatLng } from '../services/directionService';
@@ -150,17 +149,18 @@ export const PlanDetail = () => {
     return remain === 0 ? `약 ${hours}시간` : `약 ${hours}시간 ${remain}분`;
   };
 
-  const handleDelete = async () => {
-    if (!plan) return;
-    if (!confirm('정말 삭제하시겠습니까?')) return;
+  // TODO: 삭제 기능이 필요하면 사용
+  // const handleDelete = async () => {
+  //   if (!plan) return;
+  //   if (!confirm('정말 삭제하시겠습니까?')) return;
 
-    try {
-      await planService.deletePlan(plan.id);
-      navigate('/plans');
-    } catch (err) {
-      alert('삭제에 실패했습니다.');
-    }
-  };
+  //   try {
+  //     await planService.deletePlan(plan.id);
+  //     navigate('/plans');
+  //   } catch (err) {
+  //     alert('삭제에 실패했습니다.');
+  //   }
+  // };
 
   const formatTime = (time?: string) => {
     if (!time) return '';
@@ -312,25 +312,25 @@ export const PlanDetail = () => {
         </div>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Day 헤더 */}
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-3xl font-bold">{dDay}</h1>
-              <div className="flex gap-2">
+      {/* 여백과 정렬: 메인 컨텐츠 */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        {/* 시각적 위계: Day 헤더 */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 md:mb-8 gap-4 md:gap-6">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900">{dDay}</h1>
+              <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
                 <Button
                   variant="success"
                   onClick={() => setShowInviteModal(true)}
-                  className="shadow-md hover:shadow-lg"
+                  className="shadow-md hover:shadow-lg w-full sm:w-auto"
                 >
                   👥 멤버 초대
                 </Button>
                 <Link
                   to={`/plans/${plan.id}/edit`}
-                  className="flex items-center gap-2 px-4 py-2 border border-black rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 border-2 border-gray-600 rounded-lg md:rounded-xl hover:bg-gray-50 transition-colors font-semibold text-sm md:text-base"
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="w-4 h-4 md:w-5 md:h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -347,10 +347,10 @@ export const PlanDetail = () => {
               </div>
             </div>
 
-            {/* 타임라인 */}
+            {/* 타이포그래피와 여백: 타임라인 */}
             <div className="relative">
               {plan.places.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 md:py-16 text-gray-600 text-lg md:text-xl font-medium">
                   등록된 장소가 없습니다.
                 </div>
               ) : (
@@ -361,75 +361,75 @@ export const PlanDetail = () => {
                     const travelInfo = hasNext ? calculateTravelTime(place, nextPlace) : null;
                     
                     return (
-                      <div key={place.id} className="relative mb-6">
+                      <div key={place.id} className="relative mb-6 md:mb-8">
                         {/* 장소 항목 */}
-                        <div className="flex gap-4">
-                          {/* 번호 원형 아이콘 */}
+                        <div className="flex gap-3 md:gap-4">
+                          {/* 대비: 번호 원형 아이콘 */}
                           <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-semibold text-sm flex-shrink-0 shadow-md">
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center font-bold text-base md:text-lg flex-shrink-0 shadow-lg">
                               {index + 1}
                             </div>
                           </div>
 
-                          {/* 장소 정보 */}
+                          {/* 가독성: 장소 정보 */}
                           <div className="flex-1">
-                            <div className="flex items-start gap-3 mb-2">
-                              <span className="text-xl">{getCategoryIcon(place.category)}</span>
+                            <div className="flex items-start gap-3 md:gap-4 mb-2 md:mb-3">
+                              <span className="text-2xl md:text-3xl">{getCategoryIcon(place.category)}</span>
                               <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                  <span className="text-sm text-gray-600">
+                                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                                  <span className="text-sm md:text-base text-gray-600 font-medium">
                                     {place.category || '관광지'}
                                   </span>
                                   {place.visitTime && (
-                                    <span className="text-lg font-semibold text-gray-900">
+                                    <span className="text-lg md:text-xl font-bold text-gray-900 bg-green-50 px-2 md:px-3 py-1 rounded-md">
                                       {formatTime(place.visitTime)}
                                     </span>
                                   )}
                                 </div>
-                                <h3 className="text-lg font-semibold mb-1 text-gray-900">{place.name}</h3>
+                                <h3 className="text-lg md:text-xl lg:text-2xl font-bold mb-1 md:mb-2 text-gray-900 leading-tight">{place.name}</h3>
                                 {place.address && (
-                                  <p className="text-sm text-gray-600">{place.address}</p>
+                                  <p className="text-sm md:text-base text-gray-700 leading-relaxed">{place.address}</p>
                                 )}
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* 이동 정보 */}
+                        {/* 리듬: 이동 정보 */}
                         {hasNext && (
-                          <div className="flex gap-4 ml-4 mt-2 mb-4">
-                            <div className="w-8 flex justify-center">
+                          <div className="flex gap-3 md:gap-4 ml-4 md:ml-6 mt-3 md:mt-4 mb-4 md:mb-6">
+                            <div className="w-10 md:w-12 flex justify-center">
                               {/* 공백 유지 */}
                             </div>
-                            <div className="flex-1 bg-gray-50 rounded-lg p-3 border-2 border-green-500">
+                            <div className="flex-1 bg-gradient-to-br from-gray-50 to-green-50 rounded-lg md:rounded-xl p-3 md:p-4 border-2 border-green-400 shadow-sm">
                               {travelInfo ? (
                                 <>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">{getTransportIcon()}</span>
-                                    <span className="text-sm text-gray-700 font-medium">{travelInfo.transportLabel}</span>
+                                  <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                                    <span className="text-xl md:text-2xl">{getTransportIcon()}</span>
+                                    <span className="text-sm md:text-base text-gray-800 font-bold">{travelInfo.transportLabel}</span>
                                   </div>
-                                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">
+                                  <div className="flex items-center gap-2 md:gap-3 flex-wrap mb-2 md:mb-3">
+                                    <span className="bg-green-100 text-green-700 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-sm md:text-base font-bold">
                                       약 {travelInfo.distance}
                                     </span>
-                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">
+                                    <span className="bg-green-100 text-green-700 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-sm md:text-base font-bold">
                                       {travelInfo.time}
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-600">
+                                  <p className="text-sm md:text-base text-gray-700 font-medium leading-relaxed">
                                     {place.name}에서 {nextPlace.name}으로 이동
                                   </p>
                                 </>
                               ) : (
                                 <>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">{getTransportIcon()}</span>
-                                    <span className="text-sm text-gray-600">자동차 이동</span>
+                                  <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                                    <span className="text-xl md:text-2xl">{getTransportIcon()}</span>
+                                    <span className="text-sm md:text-base text-gray-700 font-medium">자동차 이동</span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">거리 정보 없음</span>
+                                    <span className="text-xs md:text-sm text-gray-500">거리 정보 없음</span>
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1">
+                                  <p className="text-sm md:text-base text-gray-700 mt-2 leading-relaxed">
                                     {place.name}에서 {nextPlace.name}으로 이동
                                   </p>
                                 </>

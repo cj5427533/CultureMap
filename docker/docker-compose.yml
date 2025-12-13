@@ -1,0 +1,82 @@
+# version은 더 이상 필요하지 않습니다 (최신 Docker Compose는 자동 감지)
+
+services:
+  # MySQL 데이터베이스
+  mysql:
+    image: mysql:8.0
+    container_name: culturemap-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: culturemap
+      MYSQL_USER: ${DB_USERNAME:-culturemap}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - culturemap-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 백엔드 서버
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: culturemap-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://mysql:3306/culturemap?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      DB_USERNAME: ${DB_USERNAME:-culturemap}
+      DB_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-e098b0e671f2a7f914744bb2c8aa296f}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../history_image:/app/history_image
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - culturemap-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api-docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # 프론트엔드 서버
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080/api}
+        VITE_KAKAO_MAP_API_KEY: ${KAKAO_JAVASCRIPT_KEY:-${KAKAO_REST_API_KEY:-e098b0e671f2a7f914744bb2c8aa296f}}
+    container_name: culturemap-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"  # 호스트 포트를 5173으로 변경 (카카오 도메인과 일치)
+    depends_on:
+      - backend
+    networks:
+      - culturemap-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  culturemap-network:
+    driver: bridge

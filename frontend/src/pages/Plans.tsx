@@ -66,38 +66,40 @@ export const Plans = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">내 플랜</h1>
-            <p className="text-gray-600">나만의 문화생활 플랜을 관리하고 공유해보세요.</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        {/* 시각적 위계와 정렬: 헤더 영역 - 모바일 최적화 */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 md:mb-8 lg:mb-12 gap-4 md:gap-6">
+          <div className="flex-1">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 md:mb-3">내 플랜</h1>
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed">나만의 문화생활 플랜을 관리하고 공유해보세요.</p>
           </div>
-          <div className="flex gap-3">
-            <Link to="/plans/new">
-              <Button variant="primary" className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+          {/* 여백과 리듬: 버튼 그룹 */}
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+            <Link to="/plans/new" className="w-full sm:w-auto">
+              <Button variant="primary" className="w-full sm:w-auto shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                 새 플랜 만들기
               </Button>
             </Link>
-            <Link to="/posts">
-              <Button variant="success" className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+            <Link to="/posts" className="w-full sm:w-auto">
+              <Button variant="success" className="w-full sm:w-auto shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                 공유 게시판
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* 플랜 검색 입력창 (디바운스 적용) */}
-        <div className="mb-6">
+        {/* 가독성과 정렬: 플랜 검색 입력창 (디바운스 적용) */}
+        <div className="mb-6 md:mb-8">
           <div className="relative">
             <input
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               placeholder="플랜 제목, 날짜, 장소로 검색..."
-              className="w-full px-4 py-3 pl-10 border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all shadow-sm"
+              className="w-full px-4 md:px-5 py-3 md:py-3.5 pl-10 md:pl-12 border-2 border-green-200 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm text-base md:text-lg"
             />
             <svg
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+              className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 text-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -112,62 +114,65 @@ export const Plans = () => {
             {searchKeyword && (
               <button
                 onClick={() => setSearchKeyword('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 md:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 touch-target"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
           </div>
           {debouncedSearchKeyword && (
-            <p className="mt-2 text-sm text-gray-600">
-              "{debouncedSearchKeyword}" 검색 결과: {filteredPlans.length}개
+            <p className="mt-3 text-sm md:text-base text-gray-700 font-medium">
+              "{debouncedSearchKeyword}" 검색 결과: <span className="text-green-600 font-bold">{filteredPlans.length}개</span>
             </p>
           )}
         </div>
 
-        {/* 내 플랜 목록 */}
+        {/* 리듬과 균형: 내 플랜 목록 */}
         {filteredPlans.length === 0 ? (
-          <Card className="text-center py-16 border-2 border-green-200 bg-gradient-to-br from-white to-green-50">
-            <div className="text-6xl mb-4">🗺️</div>
-            <p className="text-xl text-gray-700 mb-2 font-semibold">아직 플랜이 없습니다.</p>
-            <p className="text-gray-600 mb-6">새로운 여행 플랜을 만들어보세요!</p>
-            <Link to="/plans/new">
+          <Card className="text-center py-12 md:py-16 lg:py-20 border-2 border-green-200 bg-gradient-to-br from-white to-green-50">
+            <div className="text-5xl md:text-6xl lg:text-7xl mb-4 md:mb-6">🗺️</div>
+            <p className="text-xl md:text-2xl text-gray-800 mb-2 md:mb-3 font-bold">아직 플랜이 없습니다.</p>
+            <p className="text-base md:text-lg text-gray-700 mb-6 md:mb-8">새로운 여행 플랜을 만들어보세요!</p>
+            <Link to="/plans/new" className="inline-block">
               <Button variant="primary" className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                 ✨ 첫 플랜 만들기
               </Button>
             </Link>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 mb-8 md:mb-12">
             {filteredPlans.map((plan) => (
               <Card key={plan.id} className="hover:shadow-xl transition-all transform hover:scale-105 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{plan.title || plan.planDate}</h3>
+                {/* 타이포그래피: 플랜 제목 */}
+                <div className="flex items-start justify-between mb-4 md:mb-5">
+                  <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 flex-1 pr-2 line-clamp-2 leading-tight">{plan.title || plan.planDate}</h3>
                 </div>
-                <div className="space-y-2 mb-5">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-semibold text-green-600">📅 날짜:</span>
-                    <span className="text-gray-700 font-medium">{plan.planDate}</span>
+                {/* 여백과 정렬: 플랜 정보 */}
+                <div className="space-y-2 md:space-y-3 mb-5 md:mb-6">
+                  <div className="flex items-center gap-2 md:gap-3 text-sm md:text-base">
+                    <span className="font-bold text-green-600">📅 날짜:</span>
+                    <span className="text-gray-800 font-semibold">{plan.planDate}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-semibold text-green-600">📍 장소:</span>
-                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">{plan.places.length}개</span>
+                  <div className="flex items-center gap-2 md:gap-3 text-sm md:text-base">
+                    <span className="font-bold text-green-600">📍 장소:</span>
+                    <span className="bg-green-100 text-green-700 px-2 md:px-3 py-1 md:py-1.5 rounded-full font-bold">{plan.places.length}개</span>
                   </div>
                 </div>
-                <div className="flex gap-2 flex-wrap pt-4 border-t-2 border-green-200">
-                  <Link to={`/plans/${plan.id}`} className="flex-1">
-                    <Button variant="primary" className="w-full text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                {/* 일관성: 액션 버튼 - 가로 텍스트로 컴팩트하게 */}
+                <div className="flex gap-1.5 flex-wrap pt-4 md:pt-5 border-t-2 border-green-200">
+                  <Link to={`/plans/${plan.id}`}>
+                    <Button variant="primary" className="px-2.5 py-1 text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap">
                       👁️ 보기
                     </Button>
                   </Link>
-                  <Link to={`/plans/${plan.id}/edit`} className="flex-1">
-                    <Button variant="warning" className="w-full text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                  <Link to={`/plans/${plan.id}/edit`}>
+                    <Button variant="warning" className="px-2.5 py-1 text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap">
                       ✏️ 수정
                     </Button>
                   </Link>
-                  <Button variant="danger" onClick={() => handleDelete(plan.id)} className="flex-1 text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                  <Button variant="danger" onClick={() => handleDelete(plan.id)} className="px-2.5 py-1 text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap">
                     🗑️ 삭제
                   </Button>
                 </div>
@@ -176,8 +181,10 @@ export const Plans = () => {
           </div>
         )}
 
-        {/* My History 섹션 */}
-        <MyHistorySection />
+        {/* 여백: My History 섹션 - 플랜과 관계없이 항상 표시 */}
+        <div className="mt-8 md:mt-12 lg:mt-16 mb-6 md:mb-8">
+          <MyHistorySection />
+        </div>
       </div>
     </div>
   );
@@ -187,7 +194,9 @@ export const Plans = () => {
 const MyHistorySection = () => {
   const [histories, setHistories] = useState<History[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [initializing, setInitializing] = useState(false);
 
   useEffect(() => {
     loadHistories();
@@ -195,59 +204,107 @@ const MyHistorySection = () => {
 
   const loadHistories = async () => {
     try {
+      setError(null);
+      setLoading(true);
+      console.log('히스토리 로드 시작...');
       const data = await historyService.getMyHistories();
       console.log('로드된 히스토리 데이터:', data);
-      setHistories(data);
-    } catch (err) {
+      console.log('히스토리 개수:', data?.length || 0);
+      setHistories(data || []);
+      
+      // 히스토리가 없고 특정 이메일인 경우 자동 초기화 시도
+      if ((!data || data.length === 0) && !initializing) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            if (user.email === 'cj5427533@o365.jeiu.ac.kr') {
+              console.log('히스토리 자동 초기화 시도...');
+              setInitializing(true);
+              await historyService.initializeHistory();
+              console.log('히스토리 초기화 완료, 다시 로드...');
+              // 초기화 후 다시 로드
+              const newData = await historyService.getMyHistories();
+              setHistories(newData || []);
+            }
+          } catch (e) {
+            console.error('히스토리 자동 초기화 실패:', e);
+          } finally {
+            setInitializing(false);
+          }
+        }
+      }
+    } catch (err: any) {
       console.error('히스토리 로드 실패:', err);
+      console.error('에러 상세:', err.response?.data);
+      setError(err.response?.data?.message || '히스토리를 불러오는데 실패했습니다.');
+      setHistories([]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="mt-16 pt-8 border-t-4 border-green-300">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <span className="text-green-500">🎬</span>
-          My History
-        </h2>
-        <div className="text-center py-8 text-gray-600">로딩 중...</div>
-      </div>
-    );
-  }
-
-  if (histories.length === 0) {
-    return null;
-  }
-
-  const showMoreButton = histories.length > 10;
-  const displayHistories = showMoreButton ? histories.slice(0, 10) : histories;
-
-  // 날짜 포맷팅 함수
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '';
-    try {
-      const date = new Date(dateString);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      return `${year}년 ${month}월 ${day}일`;
-    } catch {
-      return dateString;
-    }
-  };
-
+  // 디버깅 로그
+  console.log('MyHistorySection 렌더링:', { loading, error, historiesCount: histories.length });
+  
+  // 항상 섹션 표시 (플랜과 관계없이) - 더 눈에 띄게
   return (
-    <>
-      <div className="mt-16 pt-8 border-t-4 border-green-300">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <span className="text-green-500">🎬</span>
-          My History
-        </h2>
-        
-        {/* 스크롤 가능한 포스터 영역 - PC 기준 약 4개 정도 보이도록 */}
-        <div className="relative">
+    <div id="history-section" className="pt-6 md:pt-8 lg:pt-10 border-t-4 border-green-400 bg-gradient-to-br from-white to-green-50 rounded-xl md:rounded-2xl p-6 md:p-8 lg:p-10 shadow-xl">
+      {/* 시각적 위계: 섹션 제목 */}
+      <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 md:mb-6 lg:mb-8 flex items-center gap-2 md:gap-3">
+        <span className="text-green-500 text-3xl md:text-4xl lg:text-5xl">🎬</span>
+        <span>My History</span>
+      </h2>
+      
+      {/* 로딩 중 */}
+      {loading && (
+        <div className="text-center py-12 text-gray-600">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-500 mx-auto mb-4"></div>
+          <p className="text-lg font-medium">로딩 중...</p>
+        </div>
+      )}
+
+      {/* 에러 발생 시 */}
+      {!loading && error && (
+        <div className="text-center py-12 bg-red-50 rounded-lg border-2 border-red-200">
+          <div className="text-5xl mb-4">⚠️</div>
+          <p className="text-red-600 mb-6 font-semibold text-lg">{error}</p>
+          <Button variant="secondary" onClick={loadHistories} className="shadow-lg">
+            다시 시도
+          </Button>
+        </div>
+      )}
+
+      {/* 히스토리가 없을 때 */}
+      {!loading && !error && histories.length === 0 && (
+        <div className="text-center py-12 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+          <p className="text-gray-700 text-xl font-bold">
+            아직 등록된 문화생활 히스토리가 없습니다.
+          </p>
+        </div>
+      )}
+
+      {/* 히스토리가 있을 때 */}
+      {!loading && !error && histories.length > 0 && (() => {
+        const showMoreButton = histories.length > 10;
+        const displayHistories = showMoreButton ? histories.slice(0, 10) : histories;
+
+        // 날짜 포맷팅 함수
+        const formatDate = (dateString?: string) => {
+          if (!dateString) return '';
+          try {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            return `${year}년 ${month}월 ${day}일`;
+          } catch {
+            return dateString;
+          }
+        };
+
+        return (
+          <div className="relative">
           {/* PC용 - 포스터를 더 크게 표시하여 공간 활용 */}
           <div className="hidden lg:block">
             <div className="overflow-x-auto pb-4 history-scroll">
@@ -374,8 +431,9 @@ const MyHistorySection = () => {
             </div>
           </div>
         </div>
-      </div>
-
+        );
+      })()}
+      
       {/* 전체 보기 모달 */}
       {showModal && (
         <HistoryModal
@@ -383,7 +441,7 @@ const MyHistorySection = () => {
           onClose={() => setShowModal(false)}
         />
       )}
-    </>
+    </div>
   );
 };
 

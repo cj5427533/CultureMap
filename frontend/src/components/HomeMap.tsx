@@ -38,7 +38,7 @@ export const HomeMap = () => {
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);
   const [selectedPlaceIndex, setSelectedPlaceIndex] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [distanceFilter, setDistanceFilter] = useState<number>(2000);
+  const [distanceFilter, setDistanceFilter] = useState<number>(3000); // 기본 반경 3km
   const [filteredPlaces, setFilteredPlaces] = useState<KakaoPlace[]>([]);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [searchResults, setSearchResults] = useState<Place[]>([]);
@@ -63,7 +63,7 @@ export const HomeMap = () => {
   }, [categoryFilter]);
 
 
-  const loadNearbyPlaces = useCallback(async (lat: number, lng: number, radius: number = 2000) => {
+  const loadNearbyPlaces = useCallback(async (lat: number, lng: number, radius: number = 3000) => {
     setLoading(true);
     setError(null);
 
@@ -623,7 +623,7 @@ export const HomeMap = () => {
 
     // Kakao Maps SDK 로드 (제공된 예시 코드 반영)
     const script = document.createElement('script');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services`;
     script.async = true;
 
     // script.onload: SDK 로드 완료 후 명시적으로 load 호출
@@ -799,51 +799,50 @@ export const HomeMap = () => {
           )}
         </div>
         
-        {/* 필터 UI */}
-        {nearbyPlaces.length > 0 && (
-          <div className="flex flex-wrap gap-3 mb-3 p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-700">카테고리:</span>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-1.5 text-sm border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="all">전체</option>
-                <option value="박물관">박물관</option>
-                <option value="미술관">미술관</option>
-                <option value="도서관">도서관</option>
-                <option value="공연장">공연장</option>
-                <option value="문화원">문화원</option>
-                <option value="전시">전시</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-700">반경:</span>
-              <select
-                value={distanceFilter}
-                onChange={(e) => {
-                  setDistanceFilter(Number(e.target.value));
-                  // 반경 변경 시 즉시 재검색
-                  if (mapInstanceRef.current && latitude && longitude) {
-                    loadNearbyPlaces(latitude, longitude, Number(e.target.value));
-                  }
-                }}
-                className="px-3 py-1.5 text-sm border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="1000">1km</option>
-                <option value="2000">2km</option>
-                <option value="3000">3km</option>
-                <option value="5000">5km</option>
-              </select>
-            </div>
-            {filteredPlaces.length !== nearbyPlaces.length && (
-              <span className="text-sm text-gray-600">
-                ({filteredPlaces.length}개 표시 중)
-              </span>
-            )}
+        {/* 필터 UI - 처음부터 표시하여 검색 전에도 카테고리와 반경 설정 가능 */}
+        <div className="flex flex-wrap gap-3 mb-3 p-3 bg-green-50 rounded-lg border border-green-200">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-700">카테고리:</span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            >
+              <option value="all">전체</option>
+              <option value="박물관">박물관</option>
+              <option value="미술관">미술관</option>
+              <option value="도서관">도서관</option>
+              <option value="공연장">공연장</option>
+              <option value="문화원">문화원</option>
+              <option value="전시">전시</option>
+            </select>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-700">반경:</span>
+            <select
+              value={distanceFilter}
+              onChange={(e) => {
+                const newRadius = Number(e.target.value);
+                setDistanceFilter(newRadius);
+                // 이미 검색 결과가 있으면 재검색
+                if (nearbyPlaces.length > 0 && mapInstanceRef.current && latitude && longitude) {
+                  loadNearbyPlaces(latitude, longitude, newRadius);
+                }
+              }}
+              className="px-3 py-1.5 text-sm border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            >
+              <option value="1000">1km</option>
+              <option value="2000">2km</option>
+              <option value="3000">3km</option>
+              <option value="5000">5km</option>
+            </select>
+          </div>
+          {nearbyPlaces.length > 0 && filteredPlaces.length !== nearbyPlaces.length && (
+            <span className="text-sm text-gray-600 flex items-center">
+              ({filteredPlaces.length}개 표시 중)
+            </span>
+          )}
+        </div>
         
         {loading && <p className="text-sm text-gray-600">검색 중...</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -882,8 +881,8 @@ export const HomeMap = () => {
               </span>
             )}
           </h3>
-          <div className="max-h-48 overflow-y-auto space-y-2">
-            {(filteredPlaces.length > 0 ? filteredPlaces : nearbyPlaces).map((place, index) => {
+          <div className="max-h-80 md:max-h-96 overflow-y-auto space-y-2">
+            {(filteredPlaces.length > 0 ? filteredPlaces : nearbyPlaces).map((place) => {
               const originalIndex = nearbyPlaces.findIndex(p => p.id === place.id);
               const isSelected = selectedPlaceIndex === originalIndex;
               

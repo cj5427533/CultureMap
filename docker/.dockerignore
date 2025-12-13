@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Build outputs
+build/
+.gradle/
+out/
+bin/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Jenkins
+Jenkinsfile
+
+# Documentation
+*.md
+README.md
+
+# Test
+src/test/
+
+# History images (컨테이너 내부에서 관리)
+history_image/*

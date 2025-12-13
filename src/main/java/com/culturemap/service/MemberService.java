@@ -5,6 +5,7 @@ import com.culturemap.domain.RefreshToken;
 import com.culturemap.dto.AuthRequest;
 import com.culturemap.dto.AuthResponse;
 import com.culturemap.dto.SignupRequest;
+import com.culturemap.repository.HistoryRepository;
 import com.culturemap.repository.MemberRepository;
 import com.culturemap.repository.RefreshTokenRepository;
 import com.culturemap.security.JwtUtil;
@@ -26,6 +27,10 @@ public class MemberService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final HistoryInitService historyInitService;
+    private final HistoryRepository historyRepository;
+    
+    private static final String TARGET_EMAIL = "cj5427533@o365.jeiu.ac.kr";
 
     public AuthResponse signup(SignupRequest request) {
         if (memberRepository.existsByEmail(request.getEmail())) {
@@ -54,6 +59,17 @@ public class MemberService {
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build();
         refreshTokenRepository.save(refreshTokenEntity);
+
+        // 특정 이메일로 가입한 경우 히스토리 자동 초기화
+        if (TARGET_EMAIL.equals(member.getEmail())) {
+            try {
+                historyInitService.initializeHistoryForMember(member);
+                log.info("회원가입 후 히스토리 초기화 완료: {}", member.getEmail());
+            } catch (Exception e) {
+                log.error("회원가입 후 히스토리 초기화 실패: {}", member.getEmail(), e);
+                // 히스토리 초기화 실패해도 회원가입은 성공으로 처리
+            }
+        }
 
         return AuthResponse.builder()
                 .token(accessToken)
@@ -85,6 +101,17 @@ public class MemberService {
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build();
         refreshTokenRepository.save(refreshTokenEntity);
+
+        // 특정 이메일로 로그인한 경우 히스토리 자동 초기화
+        if (TARGET_EMAIL.equals(member.getEmail())) {
+            try {
+                historyInitService.initializeHistoryForMember(member);
+                log.info("로그인 후 히스토리 초기화 완료: {}", member.getEmail());
+            } catch (Exception e) {
+                log.error("로그인 후 히스토리 초기화 실패: {}", member.getEmail(), e);
+                // 히스토리 초기화 실패해도 로그인은 성공으로 처리
+            }
+        }
 
         return AuthResponse.builder()
                 .token(accessToken)

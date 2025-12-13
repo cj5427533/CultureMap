@@ -30,10 +30,21 @@ public class HistoryInitService {
     @Transactional
     public void initializeHistoryImages() {
         String adminEmail = "cj5427533@o365.jeiu.ac.kr";
-        Member member = memberRepository.findByEmail(adminEmail).orElse(null);
+        Member adminMember = memberRepository.findByEmail(adminEmail).orElse(null);
         
-        if (member == null) {
+        if (adminMember == null) {
             log.info("History 초기화: 관리자 계정을 찾을 수 없습니다.");
+            return;
+        }
+        
+        // 관리자 계정에 히스토리 초기화
+        initializeHistoryForMember(adminMember);
+    }
+    
+    @Transactional
+    public void initializeHistoryForMember(Member member) {
+        if (member == null) {
+            log.warn("History 초기화: 멤버가 null입니다.");
             return;
         }
 
@@ -43,12 +54,13 @@ public class HistoryInitService {
             File historyImageDir = historyImagePath.toFile();
 
             if (!historyImageDir.exists() || !historyImageDir.isDirectory()) {
-                log.warn("History 초기화: history_image 폴더를 찾을 수 없습니다.");
+                log.warn("History 초기화: history_image 폴더를 찾을 수 없습니다. 멤버 ID: {}", member.getId());
                 return;
             }
 
             // 기존 history 삭제
             historyRepository.deleteByMemberId(member.getId());
+            log.info("History 초기화: 기존 히스토리 삭제 완료. 멤버 ID: {}", member.getId());
 
             // 파일 목록 가져오기
             File[] files = historyImageDir.listFiles((dir, name) -> 
@@ -107,9 +119,9 @@ public class HistoryInitService {
                     imageUrl, eventDate, location, history.getDisplayOrder());
             }
 
-            log.info("History 초기화 완료: {}개의 이미지가 추가되었습니다.", sortedFiles.size());
+            log.info("History 초기화 완료: {}개의 이미지가 추가되었습니다. 멤버 ID: {}", sortedFiles.size(), member.getId());
         } catch (Exception e) {
-            log.error("History 초기화 중 오류 발생", e);
+            log.error("History 초기화 중 오류 발생. 멤버 ID: {}", member.getId(), e);
             throw e; // 트랜잭션 롤백을 위해 예외 재던지기
         }
     }

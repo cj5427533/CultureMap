@@ -3,8 +3,43 @@
 @tailwind utilities;
 
 @layer base {
+  /* 가독성 개선: 기본 폰트 설정 및 텍스트 렌더링 최적화 */
   body {
     @apply bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 text-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+  }
+
+  /* 타이포그래피: 일관된 제목 스타일 */
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl font-bold text-gray-800 leading-tight;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-semibold text-gray-800 leading-snug;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl font-semibold text-gray-800;
+  }
+
+  /* 가독성: 단락 텍스트 최적화 */
+  p {
+    @apply text-base md:text-lg text-gray-700 leading-relaxed;
+  }
+
+  /* 가독성: 작은 텍스트 */
+  small {
+    @apply text-sm text-gray-600 leading-relaxed;
   }
 }
 
@@ -30,11 +65,11 @@
   }
 
   .animate-fade-in {
-    animation: fade-in 0.8s ease-out;
+    animation: fade-in 0.6s ease-out;
   }
 
   .animate-fade-in-up {
-    animation: fade-in-up 0.8s ease-out;
+    animation: fade-in-up 0.6s ease-out;
   }
 
   @keyframes loading {
@@ -45,52 +80,84 @@
       background-position: -200% 0;
     }
   }
+
+  /* 리듬: 일관된 간격 유틸리티 */
+  .spacing-xs { @apply gap-2 md:gap-3; }
+  .spacing-sm { @apply gap-3 md:gap-4; }
+  .spacing-md { @apply gap-4 md:gap-6; }
+  .spacing-lg { @apply gap-6 md:gap-8; }
+  .spacing-xl { @apply gap-8 md:gap-12; }
+
+  /* 여백: 패딩 시스템 */
+  .padding-section { @apply py-8 md:py-12 lg:py-16 px-4 sm:px-6 lg:px-8; }
+  .padding-card { @apply p-4 md:p-6 lg:p-8; }
 }
 
 @layer components {
+  /* 일관성: 버튼 기본 스타일 - 여백과 정렬 개선 */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 active:scale-95;
+    @apply px-4 md:px-6 py-2.5 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base transition-all duration-200 transform hover:scale-105 active:scale-95;
+    letter-spacing: -0.01em;
+    min-height: 44px; /* 모바일 터치 최적화 */
   }
   
+  /* 대비: 버튼 색상 변형 */
   .btn-primary {
     @apply bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl;
+    @apply border-2 border-green-600;
   }
   
   .btn-secondary {
     @apply bg-gray-600 text-white hover:bg-gray-700 shadow-md hover:shadow-lg;
+    @apply border-2 border-gray-600;
   }
   
   .btn-success {
     @apply bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 shadow-lg hover:shadow-xl;
+    @apply border-2 border-emerald-600;
   }
   
   .btn-danger {
     @apply bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg;
+    @apply border-2 border-red-600;
   }
   
   .btn-warning {
-    @apply bg-yellow-500 text-black hover:bg-yellow-600 shadow-md hover:shadow-lg;
+    @apply bg-yellow-500 text-gray-900 hover:bg-yellow-600 shadow-md hover:shadow-lg;
+    @apply border-2 border-yellow-600;
+    font-weight: 700; /* 대비 강화 */
   }
   
+  /* 여백과 정렬: 카드 컴포넌트 */
   .card {
-    @apply bg-white rounded-xl shadow-lg p-6 border border-green-100 hover:shadow-xl transition-shadow duration-300;
+    @apply bg-white rounded-xl md:rounded-2xl shadow-lg p-4 md:p-6 lg:p-8 border-2 border-green-100 hover:shadow-xl transition-all duration-300;
+    @apply hover:border-green-200;
   }
-  
+
+  /* 가독성: 입력 필드 */
   .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 md:px-5 py-2.5 md:py-3 border-2 border-gray-300 rounded-lg md:rounded-xl;
+    @apply focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200;
+    @apply text-base md:text-lg text-gray-900 placeholder:text-gray-400;
+    min-height: 44px; /* 모바일 터치 최적화 */
+    font-size: 16px; /* iOS 줌 방지 */
   }
   
+  /* 시각적 위계: 라벨 */
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-2;
+    @apply block text-sm md:text-base font-semibold text-gray-800 mb-2 md:mb-3;
+    letter-spacing: -0.01em;
   }
-  
+
+  /* 리듬: 스크롤바 커스터마이징 */
   .history-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #86efac #dcfce7;
+    scrollbar-color: #4ade80 #dcfce7;
   }
   
   .history-scroll::-webkit-scrollbar {
-    height: 12px;
+    height: 8px;
+    width: 8px;
   }
   
   .history-scroll::-webkit-scrollbar-track {
@@ -99,11 +166,16 @@
   }
   
   .history-scroll::-webkit-scrollbar-thumb {
-    background: #86efac;
+    background: #4ade80;
     border-radius: 10px;
   }
   
   .history-scroll::-webkit-scrollbar-thumb:hover {
-    background: #4ade80;
+    background: #22c55e;
+  }
+
+  /* 모바일 최적화: 터치 영역 */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
   }
 }

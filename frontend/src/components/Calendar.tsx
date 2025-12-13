@@ -34,11 +34,9 @@ export const Calendar = ({ selectedDate, onDateSelect, markedDates = [] }: Calen
 
     // 플랜이 있는 날짜 표시 (간단한 커스터마이징)
     if (markedDates.length > 0) {
-      markedDates.forEach(dateStr => {
-        const date = new Date(dateStr);
-        // Litepicker의 날짜 표시 커스터마이징은 복잡하므로
-        // 여기서는 기본 기능만 사용
-      });
+      // Litepicker의 날짜 표시 커스터마이징은 복잡하므로
+      // 여기서는 기본 기능만 사용
+      // markedDates는 이미 picker에 전달되어 표시됨
     }
 
     return () => {

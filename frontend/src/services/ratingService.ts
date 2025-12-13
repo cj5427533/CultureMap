@@ -1,5 +1,4 @@
 import api from '../utils/api';
-import type { Rating } from '../types/index';
 
 export interface RatingRequest {
   postId: number;
