@@ -1,31 +1,44 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useDebounce } from '../hooks/useDebounce';
 import { planService } from '../services/planService';
-import type { Plan } from '../types/index';
-import { authService } from '../services/authService';
-import { Calendar } from '../components/Calendar';
+import { historyService } from '../services/historyService';
+import type { Plan, History } from '../types/index';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
 export const Plans = () => {
-  const navigate = useNavigate();
   const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  
+  // 디바운스된 검색 키워드 (500ms 지연)
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
 
   useEffect(() => {
     loadPlans();
   }, []);
 
   useEffect(() => {
-    if (selectedDate) {
-      const filtered = allPlans.filter(plan => plan.planDate === selectedDate);
-      setFilteredPlans(filtered);
-    } else {
-      setFilteredPlans(allPlans);
+    let filtered = [...allPlans];
+    
+    // 검색 키워드 필터
+    if (debouncedSearchKeyword.trim()) {
+      const keyword = debouncedSearchKeyword.toLowerCase();
+      filtered = filtered.filter(plan => 
+        (plan.title && plan.title.toLowerCase().includes(keyword)) ||
+        plan.planDate.includes(keyword) ||
+        plan.memberNickname.toLowerCase().includes(keyword) ||
+        plan.places.some(place => 
+          place.name.toLowerCase().includes(keyword) ||
+          (place.address && place.address.toLowerCase().includes(keyword))
+        )
+      );
     }
-  }, [selectedDate, allPlans]);
+    
+    setFilteredPlans(filtered);
+  }, [allPlans, debouncedSearchKeyword]);
 
   const loadPlans = async () => {
     try {
@@ -37,14 +50,6 @@ export const Plans = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
-  };
-
-  const handleClearFilter = () => {
-    setSelectedDate(undefined);
   };
 
   const handleDelete = async (id: number) => {
@@ -59,20 +64,18 @@ export const Plans = () => {
 
   if (loading) return <div className="text-center py-12">로딩 중...</div>;
 
-  const markedDates = allPlans.map(plan => plan.planDate);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-800 mb-2">내 플랜</h1>
-            <p className="text-gray-600">나만의 여행 플랜을 관리하고 공유해보세요</p>
+            <p className="text-gray-600">나만의 문화생활 플랜을 관리하고 공유해보세요.</p>
           </div>
           <div className="flex gap-3">
             <Link to="/plans/new">
               <Button variant="primary" className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
-                ✨ 새 플랜 만들기
+                새 플랜 만들기
               </Button>
             </Link>
             <Link to="/posts">
@@ -83,31 +86,48 @@ export const Plans = () => {
           </div>
         </div>
 
-        <Card className="mb-8 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
-          <div className="mb-4 pb-4 border-b-2 border-green-200">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-green-500">📅</span>
-              날짜 선택
-            </h2>
+        {/* 플랜 검색 입력창 (디바운스 적용) */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder="플랜 제목, 날짜, 장소로 검색..."
+              className="w-full px-4 py-3 pl-10 border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all shadow-sm"
+            />
+            <svg
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            {searchKeyword && (
+              <button
+                onClick={() => setSearchKeyword('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
-          <Calendar
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-            markedDates={markedDates}
-          />
-          {selectedDate && (
-            <div className="mt-6 pt-4 border-t-2 border-green-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-gray-700 font-semibold">선택된 날짜:</span>
-                <span className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-lg">{selectedDate}</span>
-              </div>
-              <Button variant="secondary" onClick={handleClearFilter} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
-                🔄 필터 초기화
-              </Button>
-            </div>
+          {debouncedSearchKeyword && (
+            <p className="mt-2 text-sm text-gray-600">
+              "{debouncedSearchKeyword}" 검색 결과: {filteredPlans.length}개
+            </p>
           )}
-        </Card>
+        </div>
 
+        {/* 내 플랜 목록 */}
         {filteredPlans.length === 0 ? (
           <Card className="text-center py-16 border-2 border-green-200 bg-gradient-to-br from-white to-green-50">
             <div className="text-6xl mb-4">🗺️</div>
@@ -120,53 +140,326 @@ export const Plans = () => {
             </Link>
           </Card>
         ) : (
-          <div>
-            {selectedDate && (
-              <div className="mb-6 p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl border-2 border-green-300">
-                <p className="text-gray-800 text-lg font-semibold">
-                  <span className="text-green-700">📅 {selectedDate}</span>의 플랜 <span className="bg-green-500 text-white px-3 py-1 rounded-full">{filteredPlans.length}개</span>
-                </p>
-              </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPlans.map((plan) => (
-                <Card key={plan.id} className="hover:shadow-xl transition-all transform hover:scale-105 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{plan.title || plan.planDate}</h3>
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md">
-                      📍
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {filteredPlans.map((plan) => (
+              <Card key={plan.id} className="hover:shadow-xl transition-all transform hover:scale-105 border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-800 flex-1 pr-2 line-clamp-2">{plan.title || plan.planDate}</h3>
+                </div>
+                <div className="space-y-2 mb-5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-semibold text-green-600">📅 날짜:</span>
+                    <span className="text-gray-700 font-medium">{plan.planDate}</span>
                   </div>
-                  <div className="space-y-2 mb-5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-semibold text-green-600">📅 날짜:</span>
-                      <span className="text-gray-700 font-medium">{plan.planDate}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-semibold text-green-600">📍 장소:</span>
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">{plan.places.length}개</span>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-semibold text-green-600">📍 장소:</span>
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">{plan.places.length}개</span>
                   </div>
-                  <div className="flex gap-2 flex-wrap pt-4 border-t-2 border-green-200">
-                    <Link to={`/plans/${plan.id}`} className="flex-1">
-                      <Button variant="primary" className="w-full text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
-                        👁️ 보기
-                      </Button>
-                    </Link>
-                    <Link to={`/plans/${plan.id}/edit`} className="flex-1">
-                      <Button variant="warning" className="w-full text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
-                        ✏️ 수정
-                      </Button>
-                    </Link>
-                    <Button variant="danger" onClick={() => handleDelete(plan.id)} className="flex-1 text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
-                      🗑️ 삭제
+                </div>
+                <div className="flex gap-2 flex-wrap pt-4 border-t-2 border-green-200">
+                  <Link to={`/plans/${plan.id}`} className="flex-1">
+                    <Button variant="primary" className="w-full text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                      👁️ 보기
                     </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  </Link>
+                  <Link to={`/plans/${plan.id}/edit`} className="flex-1">
+                    <Button variant="warning" className="w-full text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                      ✏️ 수정
+                    </Button>
+                  </Link>
+                  <Button variant="danger" onClick={() => handleDelete(plan.id)} className="flex-1 text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                    🗑️ 삭제
+                  </Button>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
+
+        {/* My History 섹션 */}
+        <MyHistorySection />
+      </div>
+    </div>
+  );
+};
+
+// My History 섹션 컴포넌트
+const MyHistorySection = () => {
+  const [histories, setHistories] = useState<History[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    loadHistories();
+  }, []);
+
+  const loadHistories = async () => {
+    try {
+      const data = await historyService.getMyHistories();
+      console.log('로드된 히스토리 데이터:', data);
+      setHistories(data);
+    } catch (err) {
+      console.error('히스토리 로드 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mt-16 pt-8 border-t-4 border-green-300">
+        <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <span className="text-green-500">🎬</span>
+          My History
+        </h2>
+        <div className="text-center py-8 text-gray-600">로딩 중...</div>
+      </div>
+    );
+  }
+
+  if (histories.length === 0) {
+    return null;
+  }
+
+  const showMoreButton = histories.length > 10;
+  const displayHistories = showMoreButton ? histories.slice(0, 10) : histories;
+
+  // 날짜 포맷팅 함수
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `${year}년 ${month}월 ${day}일`;
+    } catch {
+      return dateString;
+    }
+  };
+
+  return (
+    <>
+      <div className="mt-16 pt-8 border-t-4 border-green-300">
+        <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <span className="text-green-500">🎬</span>
+          My History
+        </h2>
+        
+        {/* 스크롤 가능한 포스터 영역 - PC 기준 약 4개 정도 보이도록 */}
+        <div className="relative">
+          {/* PC용 - 포스터를 더 크게 표시하여 공간 활용 */}
+          <div className="hidden lg:block">
+            <div className="overflow-x-auto pb-4 history-scroll">
+              <div className="flex gap-6" style={{ width: 'max-content' }}>
+                {/* PC 기준으로 포스터를 더 크게 (약 280px) */}
+                {displayHistories.map((history) => (
+                  <div
+                    key={history.id}
+                    className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105 flex-shrink-0"
+                    style={{ 
+                      width: '280px',
+                      minWidth: '280px'
+                    }}
+                  >
+                    <img
+                      src={history.imageUrl.startsWith('http') ? history.imageUrl : `http://localhost:8080${history.imageUrl}`}
+                      alt={`History ${history.displayOrder}`}
+                      className="w-full h-80 object-contain bg-gray-100"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                      <div className="text-white opacity-0 group-hover:opacity-100 text-center px-4">
+                        {history.eventDate && (
+                          <div className="font-bold text-lg mb-1">
+                            {formatDate(history.eventDate)}
+                          </div>
+                        )}
+                        {history.location && (
+                          <div className="text-base">
+                            {history.location}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* 10개 넘으면 + 버튼 표시 */}
+                {showMoreButton && (
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="flex-shrink-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center group"
+                    style={{ 
+                      width: '280px',
+                      minWidth: '280px',
+                      height: '320px'
+                    }}
+                  >
+                    <div className="text-center">
+                      <div className="text-6xl text-white font-bold mb-2 group-hover:scale-110 transition-transform">
+                        +
+                      </div>
+                      <div className="text-white text-lg font-semibold">
+                        {histories.length - 10}개 더보기
+                      </div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* 모바일/태블릿용 - 반응형 그리드 */}
+          <div className="lg:hidden">
+            <div className="overflow-x-auto pb-4 history-scroll">
+              <div className="flex gap-4" style={{ width: 'max-content' }}>
+                {displayHistories.map((history) => (
+                  <div
+                    key={history.id}
+                    className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105 flex-shrink-0"
+                    style={{ 
+                      width: '200px',
+                      minWidth: '200px'
+                    }}
+                  >
+                    <img
+                      src={history.imageUrl.startsWith('http') ? history.imageUrl : `http://localhost:8080${history.imageUrl}`}
+                      alt={`History ${history.displayOrder}`}
+                      className="w-full h-64 object-contain bg-gray-100"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                      <div className="text-white opacity-0 group-hover:opacity-100 text-center px-4">
+                        {history.eventDate && (
+                          <div className="font-bold text-lg mb-1">
+                            {formatDate(history.eventDate)}
+                          </div>
+                        )}
+                        {history.location && (
+                          <div className="text-base">
+                            {history.location}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {showMoreButton && (
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="flex-shrink-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center group"
+                    style={{ 
+                      width: '200px',
+                      minWidth: '200px',
+                      height: '256px'
+                    }}
+                  >
+                    <div className="text-center">
+                      <div className="text-6xl text-white font-bold mb-2 group-hover:scale-110 transition-transform">
+                        +
+                      </div>
+                      <div className="text-white text-lg font-semibold">
+                        {histories.length - 10}개 더보기
+                      </div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 전체 보기 모달 */}
+      {showModal && (
+        <HistoryModal
+          histories={histories}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
+  );
+};
+
+// History 전체 보기 모달 컴포넌트
+const HistoryModal = ({ histories, onClose }: { histories: History[]; onClose: () => void }) => {
+  // 날짜 포맷팅 함수
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `${year}년 ${month}월 ${day}일`;
+    } catch {
+      return dateString;
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 모달 헤더 */}
+        <div className="sticky top-0 bg-white border-b-2 border-green-300 p-6 flex justify-between items-center z-10">
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <span className="text-green-500">🎬</span>
+            My History 전체 보기
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-3xl font-bold w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-all"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* 모달 내용 */}
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {histories.map((history) => (
+              <div
+                key={history.id}
+                className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                <img
+                  src={history.imageUrl.startsWith('http') ? history.imageUrl : `http://localhost:8080${history.imageUrl}`}
+                  alt={`History ${history.displayOrder}`}
+                  className="w-full h-64 object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
+                  }}
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                  <div className="text-white opacity-0 group-hover:opacity-100 text-center px-4">
+                    {history.eventDate && (
+                      <div className="font-bold text-lg mb-1">
+                        {formatDate(history.eventDate)}
+                      </div>
+                    )}
+                    {history.location && (
+                      <div className="text-base">
+                        {history.location}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

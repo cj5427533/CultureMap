@@ -121,5 +121,34 @@ public class PlaceController {
         String response = externalApiService.searchNearbyCulturePlaces(lng, lat, radius);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Kakao Local API를 통한 위치 기반 키워드 검색 (프록시)
+     * @param query 검색 키워드
+     * @param lng 경도
+     * @param lat 위도
+     * @param radius 반경 (미터, 기본 2000m)
+     * @return Kakao API 응답 JSON
+     */
+    @GetMapping("/kakao/keyword")
+    public ResponseEntity<String> searchKeywordNearby(
+            @RequestParam String query,
+            @RequestParam double lng,
+            @RequestParam double lat,
+            @RequestParam(defaultValue = "2000") int radius,
+            HttpServletRequest httpRequest) {
+        
+        String clientIp = HttpUtil.getClientIpAddress(httpRequest);
+        
+        // 레이트 리밋 확인
+        if (rateLimitService.isSearchExceeded(clientIp)) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "검색 API 호출 횟수를 초과했습니다. 1분 후 다시 시도해주세요.");
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+        }
+        
+        String response = externalApiService.searchKeywordNearby(query, lng, lat, radius);
+        return ResponseEntity.ok(response);
+    }
 }
 

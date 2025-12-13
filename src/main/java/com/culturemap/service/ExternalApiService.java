@@ -14,6 +14,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -226,6 +228,97 @@ public class ExternalApiService {
         } catch (Exception e) {
             log.error("주변 문화시설 검색 실패", e);
             throw new RuntimeException("주변 문화시설 검색에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Kakao Local API를 통한 위치 기반 키워드 검색
+     * @param query 검색 키워드
+     * @param lng 경도
+     * @param lat 위도
+     * @param radius 반경 (미터, 기본 2000m)
+     * @return Kakao API 응답 JSON 문자열
+     */
+    public String searchKeywordNearby(String query, double lng, double lat, int radius) {
+        try {
+            // 키워드 URL 인코딩
+            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            
+            // Kakao Local API - 키워드 검색
+            String kakaoUrl = String.format(
+                "https://dapi.kakao.com/v2/local/search/keyword.json?query=%s&x=%.15f&y=%.15f&radius=%d&size=15",
+                encodedQuery, lng, lat, radius
+            );
+
+            log.info("Kakao Local API 키워드 검색 호출: {}", kakaoUrl);
+
+            // HTTP 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "KakaoAK " + kakaoRestApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // HTTP 엔티티 생성
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+
+            try {
+                // RestTemplate을 사용하여 Kakao API 호출
+                ResponseEntity<String> response = restTemplate.exchange(
+                    kakaoUrl,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+                );
+
+                log.info("Kakao Local API 키워드 검색 응답 상태: {}", response.getStatusCode());
+                
+                // API 호출 카운터 증가
+                totalSearchCalls.incrementAndGet();
+                updateTodaySearchCounter();
+                
+                return response.getBody();
+            } catch (HttpClientErrorException e) {
+                // 401 Unauthorized 에러 처리
+                if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                    String errorBody = e.getResponseBodyAsString();
+                    log.error("Kakao Local API 인증 실패: 상태 코드={}, 응답={}", 
+                        e.getStatusCode(), errorBody);
+                    
+                    // IP 불일치 에러 메시지 확인
+                    if (errorBody != null && errorBody.contains("ip mismatched")) {
+                        try {
+                            JsonNode errorJson = objectMapper.readTree(errorBody);
+                            String errorMessage = errorJson.has("message") 
+                                ? errorJson.get("message").asText() 
+                                : "IP 주소가 등록되지 않았습니다.";
+                            
+                            throw new RuntimeException(
+                                "Kakao API IP 화이트리스트 오류: " + errorMessage + 
+                                " Kakao Developers 콘솔에서 서버 IP 주소를 등록해주세요.", e);
+                        } catch (Exception parseException) {
+                            throw new RuntimeException(
+                                "Kakao API 인증 실패: IP 주소가 등록되지 않았습니다. " +
+                                "Kakao Developers 콘솔(https://developers.kakao.com)에서 " +
+                                "애플리케이션 설정 > 플랫폼 > IP 주소에 서버 IP를 등록해주세요.", e);
+                        }
+                    } else {
+                        throw new RuntimeException(
+                            "Kakao API 인증 실패: API 키를 확인해주세요. " +
+                            "Kakao Developers 콘솔에서 REST API 키가 올바르게 설정되었는지 확인해주세요.", e);
+                    }
+                }
+                // 기타 HTTP 클라이언트 에러
+                log.error("Kakao Local API 키워드 검색 실패: 상태 코드={}, 응답={}", 
+                    e.getStatusCode(), e.getResponseBodyAsString());
+                throw new RuntimeException(
+                    "키워드 검색에 실패했습니다: " + e.getStatusCode() + " " + 
+                    (e.getResponseBodyAsString() != null ? e.getResponseBodyAsString() : e.getMessage()), e);
+            } catch (Exception e) {
+                log.error("Kakao Local API 키워드 검색 호출 실패", e);
+                throw new RuntimeException("키워드 검색에 실패했습니다: " + e.getMessage(), e);
+            }
+        } catch (Exception e) {
+            log.error("키워드 검색 실패", e);
+            throw new RuntimeException("키워드 검색에 실패했습니다: " + e.getMessage(), e);
         }
     }
     

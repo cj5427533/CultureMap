@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { useDebounce } from '../hooks/useDebounce';
 import { kakaoLocalService, type KakaoPlace } from '../services/kakaoLocalService';
 import { placeService } from '../services/placeService';
 import { planService } from '../services/planService';
 import { authService } from '../services/authService';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
+import type { Place } from '../types/index';
 
 declare global {
   interface Window {
@@ -38,6 +40,12 @@ export const HomeMap = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [distanceFilter, setDistanceFilter] = useState<number>(2000);
   const [filteredPlaces, setFilteredPlaces] = useState<KakaoPlace[]>([]);
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Place[]>([]);
+  const [searching, setSearching] = useState(false);
+  
+  // 디바운스된 검색 키워드 (500ms 지연)
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
 
   // 필터 적용 함수
   const applyFilters = useCallback((places: KakaoPlace[]) => {
@@ -78,6 +86,88 @@ export const HomeMap = () => {
       setFilteredPlaces([]);
     }
   }, [categoryFilter, nearbyPlaces, applyFilters]);
+
+  // 디바운스된 검색 키워드로 장소 검색 (현재 위치 기반)
+  useEffect(() => {
+    const searchPlaces = async () => {
+      if (!debouncedSearchKeyword.trim()) {
+        setSearchResults([]);
+        return;
+      }
+
+      const keyword = debouncedSearchKeyword.trim().toLowerCase();
+
+      // 먼저 이미 로드된 주변 문화시설 목록에서 검색
+      const placesToSearch = filteredPlaces.length > 0 ? filteredPlaces : nearbyPlaces;
+      if (placesToSearch.length > 0) {
+        const localResults = placesToSearch
+          .filter(place => {
+            const name = place.place_name.toLowerCase();
+            const address = (place.address_name || '').toLowerCase();
+            const roadAddress = (place.road_address_name || '').toLowerCase();
+            const category = (place.category_name || '').toLowerCase();
+            
+            return name.includes(keyword) || 
+                   address.includes(keyword) || 
+                   roadAddress.includes(keyword) ||
+                   category.includes(keyword);
+          })
+          .map((kakaoPlace): Place => ({
+            id: parseInt(kakaoPlace.id) || 0,
+            name: kakaoPlace.place_name,
+            address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+            category: kakaoPlace.category_name,
+            latitude: parseFloat(kakaoPlace.y),
+            longitude: parseFloat(kakaoPlace.x),
+          }));
+
+        // 로컬 검색 결과가 있으면 그것을 사용
+        if (localResults.length > 0) {
+          setSearchResults(localResults);
+          setSearching(false);
+          return;
+        }
+      }
+
+      // 로컬 목록에 결과가 없거나 주변 문화시설을 아직 로드하지 않은 경우 API 검색
+      if (!latitude || !longitude) {
+        console.warn('현재 위치 정보가 없어 검색할 수 없습니다.');
+        setSearchResults([]);
+        setSearching(false);
+        return;
+      }
+
+      setSearching(true);
+      try {
+        // 카카오 로컬 API를 통한 위치 기반 키워드 검색
+        const kakaoResults = await kakaoLocalService.searchKeywordNearby(
+          debouncedSearchKeyword,
+          latitude,
+          longitude,
+          distanceFilter
+        );
+        
+        // KakaoPlace를 Place 타입으로 변환
+        const convertedResults: Place[] = kakaoResults.map((kakaoPlace) => ({
+          id: parseInt(kakaoPlace.id) || 0,
+          name: kakaoPlace.place_name,
+          address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+          category: kakaoPlace.category_name,
+          latitude: parseFloat(kakaoPlace.y),
+          longitude: parseFloat(kakaoPlace.x),
+        }));
+        
+        setSearchResults(convertedResults);
+      } catch (err: any) {
+        console.error('장소 검색 실패:', err);
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    };
+
+    searchPlaces();
+  }, [debouncedSearchKeyword, latitude, longitude, distanceFilter, filteredPlaces, nearbyPlaces]);
 
   const handleSearchCulturePlaces = useCallback(() => {
     if (!mapInstanceRef.current || !window.kakao || !window.kakao.maps) {
@@ -602,6 +692,112 @@ export const HomeMap = () => {
             {loading ? '검색 중...' : '문화정보 찾기'}
           </Button>
         </div>
+
+        {/* 장소 검색 입력창 (디바운스 적용) */}
+        <div className="mb-3">
+          <div className="relative rounded-xl p-0.5 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="장소 이름 또는 주소로 검색..."
+                className="w-full px-4 py-2.5 pl-10 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all bg-white"
+              />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            {searching && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
+              </div>
+            )}
+            </div>
+          </div>
+          {debouncedSearchKeyword && !searching && searchResults.length > 0 && (
+            <div className="mt-2 p-3 bg-white border border-green-200 rounded-lg shadow-sm max-h-60 overflow-y-auto">
+              <p className="text-xs text-gray-500 mb-2">
+                "{debouncedSearchKeyword}" 검색 결과 ({searchResults.length}개)
+              </p>
+              <div className="space-y-2">
+                {searchResults.slice(0, 5).map((place) => (
+                  <div
+                    key={place.id}
+                    className="p-2 hover:bg-green-50 rounded cursor-pointer transition-colors"
+                    onClick={() => {
+                      // 지도에 마커 표시
+                      if (mapInstanceRef.current && place.latitude && place.longitude && window.kakao && window.kakao.maps) {
+                        const position = new window.kakao.maps.LatLng(
+                          Number(place.latitude),
+                          Number(place.longitude)
+                        );
+                        
+                        // 지도 중심 이동
+                        mapInstanceRef.current.setCenter(position);
+                        mapInstanceRef.current.setLevel(3);
+                        
+                        // 마커 생성
+                        const marker = new window.kakao.maps.Marker({
+                          position: position,
+                          map: mapInstanceRef.current,
+                        });
+                        
+                        // 인포윈도우 생성
+                        const infoWindow = new window.kakao.maps.InfoWindow({
+                          content: `
+                            <div style="padding:12px;min-width:200px;">
+                              <div style="font-weight:bold;font-size:14px;margin-bottom:6px;">${place.name}</div>
+                              ${place.address ? `<div style="font-size:11px;color:#666;margin-bottom:4px;">${place.address}</div>` : ''}
+                              ${place.category ? `<div style="font-size:11px;color:#666;margin-bottom:4px;">${place.category}</div>` : ''}
+                            </div>
+                          `,
+                        });
+                        
+                        infoWindow.open(mapInstanceRef.current, marker);
+                        
+                        // 기존 검색 결과 마커 제거 (선택사항)
+                        setTimeout(() => {
+                          marker.setMap(null);
+                          infoWindow.close();
+                        }, 5000);
+                      }
+                      
+                      // 검색창 초기화
+                      setSearchKeyword('');
+                    }}
+                  >
+                    <p className="font-semibold text-sm text-gray-800">{place.name}</p>
+                    {place.address && (
+                      <p className="text-xs text-gray-600">{place.address}</p>
+                    )}
+                    {place.category && (
+                      <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
+                        {place.category}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {debouncedSearchKeyword && !searching && searchResults.length === 0 && (
+            <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600">
+                "{debouncedSearchKeyword}"에 대한 검색 결과가 없습니다.
+              </p>
+            </div>
+          )}
+        </div>
         
         {/* 필터 UI */}
         {nearbyPlaces.length > 0 && (
@@ -658,11 +854,12 @@ export const HomeMap = () => {
           </p>
         )}
       </div>
-      <div
-        ref={mapRef}
-        className="w-full rounded-lg overflow-hidden bg-gray-100"
-        style={{ height: '500px', minHeight: '500px' }}
-      >
+      <div className="w-full rounded-xl p-1 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 shadow-lg">
+        <div
+          ref={mapRef}
+          className="w-full rounded-lg overflow-hidden bg-gray-100"
+          style={{ height: '500px', minHeight: '500px' }}
+        >
         {error && !mapInstanceRef.current && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center p-4">
@@ -673,6 +870,7 @@ export const HomeMap = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
       {(filteredPlaces.length > 0 || nearbyPlaces.length > 0) && (
         <div className="mt-4">

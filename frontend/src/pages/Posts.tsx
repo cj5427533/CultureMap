@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDebounce } from '../hooks/useDebounce';
 import { postService } from '../services/postService';
 import { planService } from '../services/planService';
 import { authService } from '../services/authService';
@@ -10,6 +11,7 @@ import { Card } from '../components/ui/Card';
 export const Posts = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<PlanPost[]>([]);
+  const [allPosts, setAllPosts] = useState<PlanPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [myPlans, setMyPlans] = useState<Plan[]>([]);
@@ -21,6 +23,10 @@ export const Posts = () => {
     description: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  
+  // 디바운스된 검색 키워드 (500ms 지연)
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
 
   const isAuthenticated = authService.isAuthenticated();
 
@@ -31,6 +37,7 @@ export const Posts = () => {
   const loadPosts = async () => {
     try {
       const data = await postService.getAllPosts();
+      setAllPosts(data);
       setPosts(data);
     } catch (err) {
       console.error('게시글 로드 실패:', err);
@@ -38,6 +45,25 @@ export const Posts = () => {
       setLoading(false);
     }
   };
+
+  // 디바운스된 검색 키워드로 게시글 필터링
+  useEffect(() => {
+    if (!debouncedSearchKeyword.trim()) {
+      setPosts(allPosts);
+      return;
+    }
+
+    const filtered = allPosts.filter(post => {
+      const keyword = debouncedSearchKeyword.toLowerCase();
+      return (
+        post.title.toLowerCase().includes(keyword) ||
+        (post.description && post.description.toLowerCase().includes(keyword)) ||
+        post.authorNickname.toLowerCase().includes(keyword) ||
+        post.plan.title?.toLowerCase().includes(keyword)
+      );
+    });
+    setPosts(filtered);
+  }, [debouncedSearchKeyword, allPosts]);
 
   const handleOpenShareModal = async () => {
     if (!isAuthenticated) {
@@ -141,6 +167,47 @@ export const Posts = () => {
               </Button>
             </Link>
           </div>
+        </div>
+
+        {/* 게시글 검색 입력창 (디바운스 적용) */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder="제목, 내용, 작성자로 검색..."
+              className="w-full px-4 py-3 pl-10 border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all shadow-sm"
+            />
+            <svg
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            {searchKeyword && (
+              <button
+                onClick={() => setSearchKeyword('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {debouncedSearchKeyword && (
+            <p className="mt-2 text-sm text-gray-600">
+              "{debouncedSearchKeyword}" 검색 결과: {posts.length}개
+            </p>
+          )}
         </div>
 
         {posts.length === 0 ? (

@@ -83,4 +83,27 @@
   .label {
     @apply block text-sm font-medium text-gray-700 mb-2;
   }
+  
+  .history-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #86efac #dcfce7;
+  }
+  
+  .history-scroll::-webkit-scrollbar {
+    height: 12px;
+  }
+  
+  .history-scroll::-webkit-scrollbar-track {
+    background: #dcfce7;
+    border-radius: 10px;
+  }
+  
+  .history-scroll::-webkit-scrollbar-thumb {
+    background: #86efac;
+    border-radius: 10px;
+  }
+  
+  .history-scroll::-webkit-scrollbar-thumb:hover {
+    background: #4ade80;
+  }
 }

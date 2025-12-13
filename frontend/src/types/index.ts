@@ -102,3 +102,11 @@ export interface AdminStats {
   };
 }
 
+export interface History {
+  id: number;
+  imageUrl: string;
+  eventDate?: string;
+  location?: string;
+  displayOrder: number;
+  createdAt: string;
+}

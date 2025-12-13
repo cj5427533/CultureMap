@@ -1,5 +1,6 @@
 package com.culturemap.config;
 
+import com.culturemap.service.HistoryInitService;
 import com.culturemap.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,14 +14,16 @@ import org.springframework.context.annotation.Configuration;
 public class AdminInitializer {
 
     private final MemberService memberService;
+    private final HistoryInitService historyInitService;
 
     @Bean
     public ApplicationRunner initializeAdmin() {
         return args -> {
             try {
                 memberService.initializeAdminAccount();
+                historyInitService.initializeHistoryImages();
             } catch (Exception e) {
-                log.error("어드민 계정 초기화 실패", e);
+                log.error("초기화 실패", e);
             }
         };
     }
