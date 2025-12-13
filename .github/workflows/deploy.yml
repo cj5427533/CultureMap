@@ -118,9 +118,19 @@ jobs:
         with:
           version: latest
 
+      - name: Verify Fly.io authentication
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "ERROR: FLY_API_TOKEN is not set!"
+            exit 1
+          fi
+          echo "FLY_API_TOKEN is set (length: ${#FLY_API_TOKEN})"
+          flyctl auth whoami || echo "Warning: Cannot verify token (may need app-scoped token)"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
       - name: Deploy to Fly.io
         working-directory: ./frontend
         run: flyctl deploy --app culturemap --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api --build-arg VITE_KAKAO_MAP_API_KEY=${{ secrets.VITE_KAKAO_MAP_API_KEY }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        continue-on-error: false

@@ -1,107 +1,106 @@
 # flyctl launch added from .gitignore
-**\HELP.md
-**\.gradle
-**\build
-!**\gradle\wrapper\gradle-wrapper.jar
-!**\**\src\main\**\build
-!**\**\src\test\**\build
+**/HELP.md
+**/.gradle
+**/build
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/**/src/main/**/build
+!**/**/src/test/**/build
 
 ### STS ###
-**\.apt_generated
-**\.classpath
-**\.factorypath
-**\.project
-**\.settings
-**\.springBeans
-**\.sts4-cache
-**\bin
-!**\**\src\main\**\bin
-!**\**\src\test\**\bin
+**/.apt_generated
+**/.classpath
+**/.factorypath
+**/.project
+**/.settings
+**/.springBeans
+**/.sts4-cache
+**/bin
+!**/**/src/main/**/bin
+!**/**/src/test/**/bin
 
 ### IntelliJ IDEA ###
-**\.idea
-**\*.iws
-**\*.iml
-**\*.ipr
-**\out
-!**\**\src\main\**\out
-!**\**\src\test\**\out
+**/.idea
+**/*.iws
+**/*.iml
+**/*.ipr
+**/out
+!**/**/src/main/**/out
+!**/**/src/test/**/out
 
 ### NetBeans ###
-nbproject\private
+nbproject/private
 nbbuild
 dist
 nbdist
 .nb-gradle
 
 ### VS Code ###
-**\.vscode
+**/.vscode
 
 ### Environment Variables ###
-**\.env
-**\.env.local
-**\.env.development
-**\.env.production
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
 !frontend/.env.production
-**\.env.test
-**\.env*.local
+**/.env.test
+**/.env*.local
 
 ### Frontend ###
 # Dependencies
-**\node_modules
-**\frontend\node_modules
+**/node_modules
+**/frontend/node_modules
 
 # Build outputs
-**\frontend\dist
-**\frontend\build
-**\frontend\.vite
+**/frontend/dist
+**/frontend/build
+**/frontend/.vite
 
 # Logs
-**\*.log
-**\npm-debug.log*
-**\yarn-debug.log*
-**\yarn-error.log*
-**\pnpm-debug.log*
-**\lerna-debug.log*
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
 
 # OS Files
-**\.DS_Store
-**\.DS_Store?
-**\._*
-**\.Spotlight-V100
-**\.Trashes
-**\ehthumbs.db
-**\Thumbs.db
-**\Desktop.ini
-
+**/.DS_Store
+**/.DS_Store?
+**/._*
+**/.Spotlight-V100
+**/.Trashes
+**/ehthumbs.db
+**/Thumbs.db
+**/Desktop.ini
 
 # Application Properties (민감 정보 포함)
 # 주의: 이미 Git에 올라간 경우 별도 처리 필요
-**\src\main\resources\application.properties
+**/src/main/resources/application.properties
 
-# flyctl launch added from frontend\.gitignore
+# flyctl launch added from frontend/.gitignore
 # Logs
-frontend\**\logs
-frontend\**\*.log
-frontend\**\npm-debug.log*
-frontend\**\yarn-debug.log*
-frontend\**\yarn-error.log*
-frontend\**\pnpm-debug.log*
-frontend\**\lerna-debug.log*
+frontend/**/logs
+frontend/**/*.log
+frontend/**/npm-debug.log*
+frontend/**/yarn-debug.log*
+frontend/**/yarn-error.log*
+frontend/**/pnpm-debug.log*
+frontend/**/lerna-debug.log*
 
-frontend\**\node_modules
-frontend\**\dist
-frontend\**\dist-ssr
-frontend\**\*.local
+frontend/**/node_modules
+frontend/**/dist
+frontend/**/dist-ssr
+frontend/**/*.local
 
 # Editor directories and files
-frontend\**\.vscode\*
-!frontend\**\.vscode\extensions.json
-frontend\**\.idea
-frontend\**\.DS_Store
-frontend\**\*.suo
-frontend\**\*.ntvs*
-frontend\**\*.njsproj
-frontend\**\*.sln
-frontend\**\*.sw?
+frontend/**/.vscode/*
+!frontend/**/.vscode/extensions.json
+frontend/**/.idea
+frontend/**/.DS_Store
+frontend/**/*.suo
+frontend/**/*.ntvs*
+frontend/**/*.njsproj
+frontend/**/*.sln
+frontend/**/*.sw?
 fly.toml
