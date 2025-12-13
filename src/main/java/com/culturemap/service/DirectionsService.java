@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.culturemap.config.KakaoApiCondition;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -29,6 +31,7 @@ import static org.springframework.http.HttpStatus.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Conditional(KakaoApiCondition.class)
 public class DirectionsService {
 
     private final RestTemplate restTemplate;
@@ -37,7 +40,7 @@ public class DirectionsService {
     @Value("${kakao.mobility.url:https://apis-navi.kakaomobility.com/v1/directions}")
     private String mobilityBaseUrl;
 
-    @Value("${kakao.rest-api-key}")
+    @Value("${kakao.rest-api-key:}")
     private String kakaoRestApiKey;
 
     private static final int PER_MINUTE_LIMIT = 60;
