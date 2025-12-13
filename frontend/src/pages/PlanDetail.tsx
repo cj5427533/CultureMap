@@ -532,9 +532,13 @@ export const PlanDetail = () => {
                   setShowInviteModal(false);
                   setInviteEmail('');
                   setInviteRole('VIEWER');
-                } catch {
+                } catch (err) {
                   console.error('멤버 초대 실패:', err);
-                  alert(err.response?.data?.message || err.message || '멤버 초대에 실패했습니다.');
+                  const errorMessage = err && typeof err === 'object' && 'response' in err
+                    ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || 
+                      (err instanceof Error ? err.message : '멤버 초대에 실패했습니다.')
+                    : '멤버 초대에 실패했습니다.';
+                  alert(errorMessage);
                 } finally {
                   setSubmittingInvite(false);
                 }

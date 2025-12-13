@@ -30,6 +30,7 @@ interface KakaoMap {
   setCenter: (latlng: KakaoLatLng) => void;
   setLevel: (level: number) => void;
   setBounds: (bounds: KakaoLatLngBounds) => void;
+  getCenter: () => KakaoLatLng;
 }
 
 interface KakaoLatLng {
@@ -59,6 +60,7 @@ interface KakaoMarkerOptions {
 
 interface KakaoMarker {
   setMap: (map: KakaoMap | null) => void;
+  setImage: (image: KakaoMarkerImage) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -68,6 +70,7 @@ interface KakaoMarkerImage {
 
 interface KakaoInfoWindow {
   open: (map: KakaoMap, marker: KakaoMarker) => void;
+  close: () => void;
 }
 
 interface KakaoPolylineOptions {

@@ -13,9 +13,9 @@ import type { Place, Plan } from '../types/index';
 
 export const HomeMap = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<Window['kakao']['maps']['Map'] | null>(null);
-  const markersRef = useRef<Window['kakao']['maps']['Marker'][]>([]);
-  const infoWindowsRef = useRef<Window['kakao']['maps']['InfoWindow'][]>([]);
+  const mapInstanceRef = useRef<InstanceType<Window['kakao']['maps']['Map']> | null>(null);
+  const markersRef = useRef<InstanceType<Window['kakao']['maps']['Marker']>[]>([]);
+  const infoWindowsRef = useRef<InstanceType<Window['kakao']['maps']['InfoWindow']>[]>([]);
   const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
   const [nearbyPlaces, setNearbyPlaces] = useState<KakaoPlace[]>([]);
   const [loading, setLoading] = useState(false);
@@ -229,6 +229,7 @@ export const HomeMap = () => {
       const position = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
 
       // 문화시설 마커 생성
+      if (!mapInstanceRef.current) return;
       const marker = new window.kakao.maps.Marker({
         position: position,
         map: mapInstanceRef.current,
@@ -281,6 +282,7 @@ export const HomeMap = () => {
 
       // 마커 클릭 이벤트
       window.kakao.maps.event.addListener(marker, 'click', () => {
+        if (!mapInstanceRef.current) return;
         // 다른 인포윈도우 모두 닫기
         infoWindowsRef.current.forEach(iw => iw.close());
         infoWindow.open(mapInstanceRef.current, marker);
@@ -431,13 +433,14 @@ export const HomeMap = () => {
       setShowCreateConfirm(false);
     } catch (err) {
       console.error('플랜 생성 실패:', err);
-      const statusCode = err && typeof err === 'object' && 'response' in err 
-        ? (err as { response?: { status?: number } }).response?.status 
-        : undefined;
-      const errorCode = err.code;
-      const errorMessage = err.response?.data?.message || err.message || '플랜 생성에 실패했습니다.';
+      const errObj = err && typeof err === 'object' && 'response' in err 
+        ? err as { response?: { status?: number; data?: { message?: string } }; code?: string; message?: string }
+        : { message: String(err) };
+      const statusCode = errObj.response?.status;
+      const errorCode = errObj.code;
+      const errorMessage = errObj.response?.data?.message || errObj.message || '플랜 생성에 실패했습니다.';
       
-      if (errorCode === 'ERR_NETWORK' || errorCode === 'ERR_CONNECTION_REFUSED' || err.message === 'Network Error') {
+      if (errorCode === 'ERR_NETWORK' || errorCode === 'ERR_CONNECTION_REFUSED' || errObj.message === 'Network Error') {
         alert('백엔드 서버에 연결할 수 없습니다.\n백엔드 서버가 실행 중인지 확인해주세요. (포트 8080)');
       } else if (statusCode === 403) {
         alert('권한이 없습니다. 로그인 상태를 확인해주세요.');
@@ -515,13 +518,14 @@ export const HomeMap = () => {
       setShowCreateConfirm(false);
     } catch (err) {
       console.error('플랜에 추가 실패:', err);
-      const statusCode = err && typeof err === 'object' && 'response' in err 
-        ? (err as { response?: { status?: number } }).response?.status 
-        : undefined;
-      const errorCode = err.code;
-      const errorMessage = err.response?.data?.message || err.message || '플랜에 추가하는데 실패했습니다.';
+      const errObj = err && typeof err === 'object' && 'response' in err 
+        ? err as { response?: { status?: number; data?: { message?: string } }; code?: string; message?: string }
+        : { message: String(err) };
+      const statusCode = errObj.response?.status;
+      const errorCode = errObj.code;
+      const errorMessage = errObj.response?.data?.message || errObj.message || '플랜에 추가하는데 실패했습니다.';
       
-      if (errorCode === 'ERR_NETWORK' || errorCode === 'ERR_CONNECTION_REFUSED' || err.message === 'Network Error') {
+      if (errorCode === 'ERR_NETWORK' || errorCode === 'ERR_CONNECTION_REFUSED' || errObj.message === 'Network Error') {
         alert('백엔드 서버에 연결할 수 없습니다.\n백엔드 서버가 실행 중인지 확인해주세요. (포트 8080)');
       } else if (statusCode === 403) {
         alert('권한이 없습니다. 로그인 상태를 확인해주세요.');

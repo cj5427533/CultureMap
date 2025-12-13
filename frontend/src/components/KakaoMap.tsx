@@ -17,9 +17,9 @@ interface KakaoMapProps {
 
 export const KakaoMap = ({ places, center, height = '400px', routePath }: KakaoMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<Window['kakao']['maps']['Map'] | null>(null);
-  const markersRef = useRef<Window['kakao']['maps']['Marker'][]>([]);
-  const polylineRef = useRef<Window['kakao']['maps']['Polyline'] | null>(null);
+  const mapInstanceRef = useRef<InstanceType<Window['kakao']['maps']['Map']> | null>(null);
+  const markersRef = useRef<InstanceType<Window['kakao']['maps']['Marker']>[]>([]);
+  const polylineRef = useRef<InstanceType<Window['kakao']['maps']['Polyline']> | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -38,51 +38,52 @@ export const KakaoMap = ({ places, center, height = '400px', routePath }: KakaoM
         polylineRef.current = null;
       }
 
-      // 기존 지도가 있으면 제거하지 않고 마커만 업데이트
-      if (mapInstanceRef.current) {
-        // 마커만 업데이트
-        if (places && places.length > 0) {
-          const bounds = new window.kakao.maps.LatLngBounds();
+        // 기존 지도가 있으면 제거하지 않고 마커만 업데이트
+        if (mapInstanceRef.current) {
+          // 마커만 업데이트
+          if (places && places.length > 0) {
+            const bounds = new window.kakao.maps.LatLngBounds();
+            const currentMap = mapInstanceRef.current;
 
-          places.forEach((place, index) => {
-            if (place.latitude && place.longitude) {
-              const position = new window.kakao.maps.LatLng(
-                Number(place.latitude),
-                Number(place.longitude)
-              );
+            places.forEach((place, index) => {
+              if (place.latitude && place.longitude) {
+                const position = new window.kakao.maps.LatLng(
+                  Number(place.latitude),
+                  Number(place.longitude)
+                );
 
-              // 커스텀 마커 이미지 생성 (초록색 원에 번호)
-              const markerNumber = index + 1;
-              const markerSize = new window.kakao.maps.Size(40, 40);
-              const markerOffset = new window.kakao.maps.Point(20, 20);
-              
-              // SVG를 사용한 커스텀 마커
-              const markerImageSrc = `data:image/svg+xml;base64,${btoa(`
-                <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="20" cy="20" r="18" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
-                  <text x="20" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">${markerNumber}</text>
-                </svg>
-              `)}`;
-              
-              const markerImage = new window.kakao.maps.MarkerImage(
-                markerImageSrc,
-                markerSize,
-                { offset: markerOffset }
-              );
+                // 커스텀 마커 이미지 생성 (초록색 원에 번호)
+                const markerNumber = index + 1;
+                const markerSize = new window.kakao.maps.Size(40, 40);
+                const markerOffset = new window.kakao.maps.Point(20, 20);
+                
+                // SVG를 사용한 커스텀 마커
+                const markerImageSrc = `data:image/svg+xml;base64,${btoa(`
+                  <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="20" r="18" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+                    <text x="20" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">${markerNumber}</text>
+                  </svg>
+                `)}`;
+                
+                const markerImage = new window.kakao.maps.MarkerImage(
+                  markerImageSrc,
+                  markerSize,
+                  { offset: markerOffset }
+                );
 
-              const marker = new window.kakao.maps.Marker({
-                position: position,
-                image: markerImage,
-                map: mapInstanceRef.current,
-              });
+                const marker = new window.kakao.maps.Marker({
+                  position: position,
+                  image: markerImage,
+                  map: currentMap,
+                });
 
-              const infoWindow = new window.kakao.maps.InfoWindow({
-                content: `<div style="padding:5px;font-size:12px;">${markerNumber}. ${place.name}</div>`,
-              });
+                const infoWindow = new window.kakao.maps.InfoWindow({
+                  content: `<div style="padding:5px;font-size:12px;">${markerNumber}. ${place.name}</div>`,
+                });
 
-              window.kakao.maps.event.addListener(marker, 'click', () => {
-                infoWindow.open(mapInstanceRef.current, marker);
-              });
+                window.kakao.maps.event.addListener(marker, 'click', () => {
+                  infoWindow.open(currentMap, marker);
+                });
 
               markersRef.current.push(marker);
               bounds.extend(position);
@@ -213,7 +214,7 @@ export const KakaoMap = ({ places, center, height = '400px', routePath }: KakaoM
     };
 
     // SDK가 이미 로드되어 있는지 확인
-    if (window.kakao && window.kakao.maps && window.kakao.maps.load) {
+    if (window.kakao && window.kakao.maps && typeof window.kakao.maps.load === 'function') {
       initializeMap();
       return;
     }
@@ -223,7 +224,7 @@ export const KakaoMap = ({ places, center, height = '400px', routePath }: KakaoM
     if (existingScript) {
       // 이미 스크립트가 있으면 로드 완료를 기다림
       const checkSDK = setInterval(() => {
-        if (window.kakao && window.kakao.maps && window.kakao.maps.load) {
+        if (window.kakao && window.kakao.maps && typeof window.kakao.maps.load === 'function') {
           clearInterval(checkSDK);
           initializeMap();
         }
