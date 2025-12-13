@@ -35,13 +35,13 @@ export const Home = () => {
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-3">
                 <Link to="/plans" className="transform hover:scale-105 transition-transform duration-200">
-                  <Button variant="secondary" className="px-6 py-2 text-base font-semibold bg-white text-green-600 hover:bg-gray-100 shadow-xl">
-                    내 플랜 보기
+                  <Button variant="secondary" className="px-8 py-3 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-2xl border-2 border-white/20">
+                    📅 내 플랜 보기
                   </Button>
                 </Link>
                 <Link to="/posts" className="transform hover:scale-105 transition-transform duration-200">
-                  <Button variant="success" className="px-6 py-2 text-base font-semibold shadow-xl">
-                    공유 게시판
+                  <Button variant="success" className="px-8 py-3 text-base font-bold bg-gradient-to-r from-yellow-400 to-amber-500 text-gray-800 hover:from-yellow-500 hover:to-amber-600 shadow-2xl border-2 border-white/20">
+                    👥 공유 게시판
                   </Button>
                 </Link>
               </div>
@@ -49,13 +49,13 @@ export const Home = () => {
           ) : (
             <div className="flex flex-col sm:flex-row justify-center gap-3 animate-fade-in-up">
               <Link to="/login" className="transform hover:scale-105 transition-transform duration-200">
-                <Button variant="secondary" className="px-6 py-2 text-base font-semibold bg-white text-green-600 hover:bg-gray-100 shadow-xl">
-                  로그인
+                <Button variant="secondary" className="px-8 py-3 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-2xl border-2 border-white/20">
+                  🔐 로그인
                 </Button>
               </Link>
               <Link to="/signup" className="transform hover:scale-105 transition-transform duration-200">
-                <Button variant="success" className="px-6 py-2 text-base font-semibold shadow-xl">
-                  회원가입
+                <Button variant="success" className="px-8 py-3 text-base font-bold bg-white text-green-700 hover:bg-green-50 shadow-2xl border-2 border-white/20">
+                  ✨ 회원가입
                 </Button>
               </Link>
             </div>

@@ -1,22 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { planService } from '../services/planService';
-import { postService } from '../services/postService';
-import type { Plan, PlanPostRequest, Place } from '../types/index';
+import { authService } from '../services/authService';
+import type { Plan, Place } from '../types/index';
 import { KakaoMap } from '../components/KakaoMap';
+import { directionService, type DirectionsLatLng } from '../services/directionService';
+import { Button } from '../components/ui/Button';
 
 export const PlanDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showShareForm, setShowShareForm] = useState(false);
-  const [shareForm, setShareForm] = useState<PlanPostRequest>({
-    planId: 0,
-    title: '',
-    description: '',
-  });
-  const [activeTab, setActiveTab] = useState<'itinerary' | 'search'>('itinerary');
+  const [routePath, setRoutePath] = useState<DirectionsLatLng[]>([]);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
+  const [routeSummary, setRouteSummary] = useState<{ distanceMeters: number; durationSeconds: number } | null>(null);
+  // 각 구간별 경로 정보 저장 (key: "placeId1-placeId2")
+  const [segmentRoutes, setSegmentRoutes] = useState<Map<string, { distanceMeters: number; durationSeconds: number }>>(new Map());
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('VIEWER');
+  const [submittingInvite, setSubmittingInvite] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -35,13 +40,114 @@ export const PlanDetail = () => {
         return a.visitTime.localeCompare(b.visitTime);
       });
       setPlan({ ...data, places: sortedPlaces });
-      setShareForm({ ...shareForm, planId: planId, title: data.title || `${data.planDate} 플랜` });
     } catch (err) {
       alert('플랜을 불러오는데 실패했습니다.');
       navigate('/plans');
     } finally {
       setLoading(false);
     }
+  };
+
+  const validPlacesWithCoords = useMemo(
+    () => plan?.places.filter(p => p.latitude && p.longitude) ?? [],
+    [plan]
+  );
+
+  useEffect(() => {
+    setRoutePath([]);
+    setRouteSummary(null);
+    setRouteError(null);
+    setRouteLoading(false);
+    setSegmentRoutes(new Map());
+  }, [plan?.id]);
+
+  const handleRouteRequest = async () => {
+    if (!plan) return;
+    if (validPlacesWithCoords.length < 2) {
+      setRouteError('경로를 계산하려면 2개 이상의 장소가 필요합니다.');
+      return;
+    }
+
+    setRouteLoading(true);
+    setRouteError(null);
+    setRouteSummary(null);
+    setRoutePath([]);
+    setSegmentRoutes(new Map());
+
+    try {
+      // 전체 경로 조회 (지도 표시용)
+      const origin = validPlacesWithCoords[0];
+      const destination = validPlacesWithCoords[validPlacesWithCoords.length - 1];
+      const waypoints =
+        validPlacesWithCoords.length > 2
+          ? validPlacesWithCoords.slice(1, validPlacesWithCoords.length - 1).map(p => ({
+              lat: Number(p.latitude),
+              lng: Number(p.longitude),
+            }))
+          : undefined;
+
+      const fullRouteResult = await directionService.getDirections({
+        originLat: Number(origin.latitude),
+        originLng: Number(origin.longitude),
+        destLat: Number(destination.latitude),
+        destLng: Number(destination.longitude),
+        waypoints,
+      });
+
+      setRoutePath(fullRouteResult.path || []);
+      setRouteSummary({
+        distanceMeters: fullRouteResult.distanceMeters,
+        durationSeconds: fullRouteResult.durationSeconds,
+      });
+
+      // 각 구간별 경로 조회 (타임라인 표시용)
+      const newSegmentRoutes = new Map<string, { distanceMeters: number; durationSeconds: number }>();
+      
+      for (let i = 0; i < validPlacesWithCoords.length - 1; i++) {
+        const currentPlace = validPlacesWithCoords[i];
+        const nextPlace = validPlacesWithCoords[i + 1];
+        
+        try {
+          const segmentResult = await directionService.getDirections({
+            originLat: Number(currentPlace.latitude),
+            originLng: Number(currentPlace.longitude),
+            destLat: Number(nextPlace.latitude),
+            destLng: Number(nextPlace.longitude),
+          });
+          
+          const segmentKey = `${currentPlace.id}-${nextPlace.id}`;
+          newSegmentRoutes.set(segmentKey, {
+            distanceMeters: segmentResult.distanceMeters,
+            durationSeconds: segmentResult.durationSeconds,
+          });
+        } catch (segmentErr) {
+          console.warn(`구간 ${i + 1} 경로 조회 실패:`, segmentErr);
+          // 개별 구간 실패는 무시하고 계속 진행
+        }
+      }
+      
+      setSegmentRoutes(newSegmentRoutes);
+    } catch (err: any) {
+      console.error('경로 조회 실패:', err);
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        '경로를 불러오지 못했습니다.';
+      setRouteError(message);
+    } finally {
+      setRouteLoading(false);
+    }
+  };
+
+  const formatDurationMinutes = (seconds?: number) => {
+    if (!seconds) return '';
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 1) return '1분 미만';
+    if (minutes < 60) return `약 ${minutes}분`;
+    const hours = Math.floor(minutes / 60);
+    const remain = minutes % 60;
+    return remain === 0 ? `약 ${hours}시간` : `약 ${hours}시간 ${remain}분`;
   };
 
   const handleDelete = async () => {
@@ -53,19 +159,6 @@ export const PlanDetail = () => {
       navigate('/plans');
     } catch (err) {
       alert('삭제에 실패했습니다.');
-    }
-  };
-
-  const handleShare = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!plan) return;
-
-    try {
-      await postService.createPost(shareForm);
-      alert('게시글이 등록되었습니다!');
-      navigate('/posts');
-    } catch (err: any) {
-      alert(err.response?.data?.message || '공유에 실패했습니다.');
     }
   };
 
@@ -125,7 +218,7 @@ export const PlanDetail = () => {
   const calculateTravelTime = (currentPlace: Place, nextPlace: Place): { 
     distance: string; 
     time: string; 
-    transportType: 'car' | 'walk';
+    transportType: 'car';
     transportLabel: string;
   } | null => {
     // 좌표가 없으면 null 반환
@@ -135,7 +228,26 @@ export const PlanDetail = () => {
     }
 
     try {
-      // Haversine 공식으로 거리 계산 (미터 단위)
+      // Directions API 결과가 있으면 우선 사용
+      const segmentKey = `${currentPlace.id}-${nextPlace.id}`;
+      const apiRoute = segmentRoutes.get(segmentKey);
+      
+      if (apiRoute) {
+        const distanceKm = apiRoute.distanceMeters / 1000;
+        const distanceStr = distanceKm < 1 
+          ? `${Math.round(apiRoute.distanceMeters)}m` 
+          : `${distanceKm.toFixed(1)}km`;
+        const timeStr = formatDurationMinutes(apiRoute.durationSeconds);
+        
+        return {
+          distance: distanceStr,
+          time: timeStr,
+          transportType: 'car',
+          transportLabel: '자동차 이동'
+        };
+      }
+
+      // API 결과가 없으면 직선 거리 기반 추정 (자동차 기준)
       const distanceMeters = calculateDistance(
         currentPlace.latitude,
         currentPlace.longitude,
@@ -143,43 +255,28 @@ export const PlanDetail = () => {
         nextPlace.longitude
       );
       
-      // 거리를 킬로미터로 변환
       const distanceKm = distanceMeters / 1000;
       const distanceStr = distanceKm < 1 
         ? `${Math.round(distanceMeters)}m` 
         : `${distanceKm.toFixed(1)}km`;
       
-      // 거리 기준으로 이동 수단 결정 (1.5km 이하는 도보, 이상은 자동차)
-      const isWalk = distanceKm <= 1.5;
-      const transportType: 'car' | 'walk' = isWalk ? 'walk' : 'car';
-      const transportLabel = isWalk ? '도보 이동 (추천)' : '자동차 이동 (추천)';
-      
-      // 이동 수단별 소요 시간 계산 (더 현실적인 기준)
-      let timeMinutes: number;
-      if (isWalk) {
-        // 도보 기준: 시속 4km (평균 보행 속도, 약 15분/km)
-        timeMinutes = Math.round((distanceKm / 4) * 60);
-        // 최소 3분 보장
-        timeMinutes = Math.max(timeMinutes, 3);
+      // 자동차 기준: 시속 30km (도심 평균 속도, 신호등 및 교통 체증 고려)
+      let timeMinutes = Math.round((distanceKm / 30) * 60);
+      // 짧은 거리는 최소 시간 보장
+      if (distanceKm <= 2) {
+        timeMinutes = Math.max(timeMinutes, 5);
+      } else if (distanceKm <= 5) {
+        timeMinutes = Math.max(timeMinutes, 8);
       } else {
-        // 자동차 기준: 시속 30km (도심 평균 속도, 신호등 및 교통 체증 고려)
-        timeMinutes = Math.round((distanceKm / 30) * 60);
-        // 짧은 거리는 최소 시간 보장 (신호 대기, 출발/도착 시간 고려)
-        if (distanceKm <= 2) {
-          timeMinutes = Math.max(timeMinutes, 5); // 2km 이하는 최소 5분
-        } else if (distanceKm <= 5) {
-          timeMinutes = Math.max(timeMinutes, 8); // 5km 이하는 최소 8분
-        } else {
-          timeMinutes = Math.max(timeMinutes, 10); // 그 이상은 최소 10분
-        }
+        timeMinutes = Math.max(timeMinutes, 10);
       }
       const timeStr = timeMinutes < 1 ? '1분 미만' : `약 ${timeMinutes}분`;
       
       return { 
         distance: distanceStr, 
         time: timeStr,
-        transportType,
-        transportLabel
+        transportType: 'car',
+        transportLabel: '자동차 이동'
       };
     } catch (error) {
       console.error('거리 계산 실패:', error);
@@ -187,8 +284,8 @@ export const PlanDetail = () => {
     }
   };
 
-  const getTransportIcon = (transportType?: 'car' | 'walk') => {
-    return transportType === 'walk' ? '🚶' : '🚗';
+  const getTransportIcon = () => {
+    return '🚗';
   };
 
   if (loading) return <div className="text-center py-12">로딩 중...</div>;
@@ -213,60 +310,41 @@ export const PlanDetail = () => {
             <span className="text-lg font-medium text-gray-700">내 일정</span>
           </div>
         </div>
-
-        {/* 탭 네비게이션 */}
-        <div className="max-w-7xl mx-auto mt-4">
-          <div className="flex gap-6 border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('itinerary')}
-              className={`pb-3 px-1 font-medium transition-colors ${
-                activeTab === 'itinerary'
-                  ? 'text-green-500 border-b-2 border-green-500'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              일정
-            </button>
-            <button
-              onClick={() => setActiveTab('search')}
-              className={`pb-3 px-1 font-medium transition-colors ${
-                activeTab === 'search'
-                  ? 'text-green-500 border-b-2 border-green-500'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              검색
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* 메인 컨텐츠 */}
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {activeTab === 'itinerary' ? (
-          <>
-            {/* Day 헤더 */}
+        {/* Day 헤더 */}
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold">{dDay}</h1>
-              <Link
-                to={`/plans/${plan.id}/edit`}
-                className="flex items-center gap-2 px-4 py-2 border border-black rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div className="flex gap-2">
+                <Button
+                  variant="success"
+                  onClick={() => setShowInviteModal(true)}
+                  className="shadow-md hover:shadow-lg"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-                <span>수정</span>
-              </Link>
+                  👥 멤버 초대
+                </Button>
+                <Link
+                  to={`/plans/${plan.id}/edit`}
+                  className="flex items-center gap-2 px-4 py-2 border border-black rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  <span>수정</span>
+                </Link>
+              </div>
             </div>
 
             {/* 타임라인 */}
@@ -323,12 +401,12 @@ export const PlanDetail = () => {
                             <div className="w-8 flex justify-center">
                               {/* 공백 유지 */}
                             </div>
-                            <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div className="flex-1 bg-gray-50 rounded-lg p-3 border-2 border-green-500">
                               {travelInfo ? (
                                 <>
                                   <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">{getTransportIcon(travelInfo.transportType)}</span>
-                                    <span className="text-sm text-gray-600">{travelInfo.transportLabel}</span>
+                                    <span className="text-lg">{getTransportIcon()}</span>
+                                    <span className="text-sm text-gray-700 font-medium">{travelInfo.transportLabel}</span>
                                   </div>
                                   <div className="flex items-center gap-2 flex-wrap mb-2">
                                     <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">
@@ -346,7 +424,7 @@ export const PlanDetail = () => {
                                 <>
                                   <div className="flex items-center gap-2 mb-2">
                                     <span className="text-lg">{getTransportIcon()}</span>
-                                    <span className="text-sm text-gray-600">이동</span>
+                                    <span className="text-sm text-gray-600">자동차 이동</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-500">거리 정보 없음</span>
@@ -366,81 +444,153 @@ export const PlanDetail = () => {
               )}
             </div>
 
-            {/* 액션 버튼들 */}
-            <div className="mt-8 flex gap-3">
+            {/* 지도 & 경로 */}
+            {plan.places.length > 0 && plan.places.some(p => p.latitude && p.longitude) && (
+              <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
+                <div className="mb-4">
+                  <h2 className="text-xl font-bold">지도</h2>
+                </div>
+                <KakaoMap places={plan.places} height="500px" routePath={routePath} />
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <span className="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-semibold">자동차</span>
+                    {routeSummary ? (
+                      <>
+                        <span className="text-gray-800 font-medium">
+                          {(routeSummary.distanceMeters / 1000).toFixed(1)} km
+                        </span>
+                        <span className="text-gray-600">{formatDurationMinutes(routeSummary.durationSeconds)}</span>
+                        {routePath.length > 0 && <span className="text-gray-500">실제 도로 경로</span>}
+                      </>
+                    ) : (
+                      <span className="text-gray-500">경로 보기 버튼을 눌러주세요.</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {routeError && (
+                      <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+                        {routeError}
+                      </div>
+                    )}
+                    <button
+                      onClick={handleRouteRequest}
+                      disabled={routeLoading || validPlacesWithCoords.length < 2}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        routeLoading || validPlacesWithCoords.length < 2
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-500 text-white hover:bg-green-600'
+                      }`}
+                    >
+                      {routeLoading ? '경로 불러오는 중...' : '자동차 경로 보기'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+      </div>
+
+      {/* 멤버 초대 모달 */}
+      {showInviteModal && plan && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm"
+          onClick={() => setShowInviteModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border-2 border-green-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-green-200">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <span className="text-green-500">👥</span>
+                멤버 초대
+              </h2>
               <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-green-600 text-3xl transition-colors"
               >
-                삭제
-              </button>
-              <button
-                onClick={() => setShowShareForm(!showShareForm)}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-              >
-                공유하기
+                ×
               </button>
             </div>
 
-            {/* 공유 폼 */}
-            {showShareForm && (
-              <div className="mt-6 bg-gray-50 rounded-lg p-6">
-                <h2 className="text-xl font-bold mb-4">플랜 공유하기</h2>
-                <form onSubmit={handleShare}>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      제목 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={shareForm.title}
-                      onChange={(e) => setShareForm({ ...shareForm, title: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">설명</label>
-                    <textarea
-                      value={shareForm.description}
-                      onChange={(e) => setShareForm({ ...shareForm, description: e.target.value })}
-                      rows={5}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      공유하기
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowShareForm(false)}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                    >
-                      취소
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!plan || !inviteEmail.trim()) {
+                  alert('이메일을 입력해주세요.');
+                  return;
+                }
 
-            {/* 지도 */}
-            {plan.places.length > 0 && plan.places.some(p => p.latitude && p.longitude) && (
-              <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-xl font-bold mb-4">지도</h2>
-                <KakaoMap places={plan.places} height="500px" />
+                setSubmittingInvite(true);
+                try {
+                  await planService.inviteMember({
+                    planId: plan.id,
+                    email: inviteEmail.trim(),
+                    role: inviteRole,
+                  });
+                  alert('멤버가 초대되었습니다!');
+                  setShowInviteModal(false);
+                  setInviteEmail('');
+                  setInviteRole('VIEWER');
+                } catch (err: any) {
+                  console.error('멤버 초대 실패:', err);
+                  alert(err.response?.data?.message || err.message || '멤버 초대에 실패했습니다.');
+                } finally {
+                  setSubmittingInvite(false);
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  이메일 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                  placeholder="초대할 사용자의 이메일"
+                />
               </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-12 text-gray-500">
-            검색 기능은 준비 중입니다.
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  권한 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                >
+                  <option value="VIEWER">조회만 가능 (VIEWER)</option>
+                  <option value="EDITOR">수정 가능 (EDITOR)</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1"
+                  disabled={submittingInvite}
+                >
+                  취소
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="flex-1"
+                  disabled={submittingInvite}
+                >
+                  {submittingInvite ? '초대 중...' : '초대하기'}
+                </Button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

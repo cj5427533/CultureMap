@@ -34,118 +34,50 @@ export const HomeMap = () => {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);
+  const [selectedPlaceIndex, setSelectedPlaceIndex] = useState<number | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [distanceFilter, setDistanceFilter] = useState<number>(2000);
+  const [filteredPlaces, setFilteredPlaces] = useState<KakaoPlace[]>([]);
 
-  const loadNearbyPlaces = useCallback(async (lat: number, lng: number) => {
+  // 필터 적용 함수
+  const applyFilters = useCallback((places: KakaoPlace[]) => {
+    let filtered = [...places];
+
+    // 카테고리 필터
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(place => 
+        place.category_name.toLowerCase().includes(categoryFilter.toLowerCase())
+      );
+    }
+
+    // 거리 필터는 이미 API 호출 시 반경으로 제한되므로 여기서는 정렬만 수행
+    setFilteredPlaces(filtered);
+  }, [categoryFilter]);
+
+
+  const loadNearbyPlaces = useCallback(async (lat: number, lng: number, radius: number = 2000) => {
     setLoading(true);
     setError(null);
 
     try {
-      const places = await kakaoLocalService.searchNearbyCulturePlaces(lat, lng, 2000);
+      const places = await kakaoLocalService.searchNearbyCulturePlaces(lat, lng, radius);
       setNearbyPlaces(places);
-
-      if (!mapInstanceRef.current || !window.kakao || !window.kakao.maps) {
-        console.warn('지도 인스턴스가 없습니다.');
-        return;
-      }
-
-      // 기존 마커 및 인포윈도우 제거 (사용자 위치 마커 제외)
-      markersRef.current.forEach(marker => marker.setMap(null));
-      infoWindowsRef.current.forEach(infoWindow => infoWindow.close());
-      markersRef.current = [];
-      infoWindowsRef.current = [];
-
-      // 주변 문화시설 마커 추가
-      const bounds = new window.kakao.maps.LatLngBounds();
-      bounds.extend(new window.kakao.maps.LatLng(lat, lng)); // 사용자 위치 포함
-
-      places.forEach((place, placeIndex) => {
-        const position = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
-
-        // 문화시설 마커 생성
-        const marker = new window.kakao.maps.Marker({
-          position: position,
-          map: mapInstanceRef.current,
-        });
-
-        // 인포윈도우 내용 생성 (더 상세한 정보 포함)
-        const isAuthenticated = authService.isAuthenticated();
-        const infoContent = `
-          <div style="padding:12px;min-width:200px;max-width:280px;">
-            <div style="font-weight:bold;font-size:14px;margin-bottom:6px;color:#333;">${place.place_name}</div>
-            <div style="font-size:11px;color:#666;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #eee;">
-              ${place.category_name}
-            </div>
-            ${place.road_address_name ? `
-              <div style="font-size:11px;color:#555;margin-bottom:2px;">
-                <span style="color:#999;">도로명:</span> ${place.road_address_name}
-              </div>
-            ` : ''}
-            <div style="font-size:11px;color:#555;margin-bottom:4px;">
-              <span style="color:#999;">지번:</span> ${place.address_name}
-            </div>
-            ${place.phone ? `
-              <div style="font-size:11px;color:#555;margin-bottom:4px;">
-                <span style="color:#999;">전화:</span> ${place.phone}
-              </div>
-            ` : ''}
-            ${place.place_url ? `
-              <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;margin-bottom:6px;">
-                <a href="${place.place_url}" target="_blank" 
-                   style="font-size:11px;color:#16a34a;text-decoration:none;font-weight:500;">
-                  카카오맵에서 보기 →
-                </a>
-              </div>
-            ` : ''}
-            ${isAuthenticated ? `
-              <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;">
-                <button id="add-to-plan-btn-${placeIndex}" 
-                        style="width:100%;padding:6px;background:linear-gradient(to right, #22c55e, #16a34a);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;box-shadow:0 2px 4px rgba(34,197,94,0.3);transition:all 0.2s;">
-                  플랜에 추가
-                </button>
-              </div>
-            ` : ''}
-          </div>
-        `;
-
-        // 인포윈도우 생성
-        const infoWindow = new window.kakao.maps.InfoWindow({
-          content: infoContent,
-        });
-
-        // 마커 클릭 이벤트
-        window.kakao.maps.event.addListener(marker, 'click', () => {
-          // 다른 인포윈도우 모두 닫기
-          infoWindowsRef.current.forEach(iw => iw.close());
-          infoWindow.open(mapInstanceRef.current, marker);
-          
-          // 플랜에 추가 버튼 이벤트 리스너 추가
-          setTimeout(() => {
-            const btn = document.getElementById(`add-to-plan-btn-${placeIndex}`);
-            if (btn) {
-              btn.onclick = (e) => {
-                e.stopPropagation();
-                handleAddToPlanClick(place);
-              };
-            }
-          }, 100);
-        });
-
-        markersRef.current.push(marker);
-        infoWindowsRef.current.push(infoWindow);
-        bounds.extend(position);
-      });
-
-      // 모든 마커가 보이도록 지도 범위 조정
-      if (places.length > 0) {
-        mapInstanceRef.current.setBounds(bounds);
-      }
+      applyFilters(places);
     } catch (err: any) {
       setError(err.message || '주변 문화시설을 불러오는데 실패했습니다.');
-      console.error('주변 문화시설 검색 실패:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyFilters]);
+
+  // 필터 변경 시 필터 적용
+  useEffect(() => {
+    if (nearbyPlaces.length > 0) {
+      applyFilters(nearbyPlaces);
+    } else {
+      setFilteredPlaces([]);
+    }
+  }, [categoryFilter, nearbyPlaces, applyFilters]);
 
   const handleSearchCulturePlaces = useCallback(() => {
     if (!mapInstanceRef.current || !window.kakao || !window.kakao.maps) {
@@ -158,8 +90,8 @@ export const HomeMap = () => {
     const lat = center.getLat();
     const lng = center.getLng();
 
-    loadNearbyPlaces(lat, lng);
-  }, [loadNearbyPlaces]);
+    loadNearbyPlaces(lat, lng, distanceFilter);
+  }, [loadNearbyPlaces, distanceFilter]);
 
   const handleAddToPlanClick = useCallback((place: KakaoPlace) => {
     if (!authService.isAuthenticated()) {
@@ -178,6 +110,140 @@ export const HomeMap = () => {
     setShowCreateConfirm(false);
     setShowPlanModal(true);
   }, []);
+
+  // 마커 업데이트 함수 (필터링된 장소만 표시)
+  const updateMarkers = useCallback((placesToShow: KakaoPlace[], userLat?: number, userLng?: number) => {
+    if (!mapInstanceRef.current || !window.kakao || !window.kakao.maps) {
+      console.warn('지도 인스턴스가 없습니다.');
+      return;
+    }
+
+    // 기존 마커 및 인포윈도우 제거
+    markersRef.current.forEach(marker => marker.setMap(null));
+    infoWindowsRef.current.forEach(infoWindow => infoWindow.close());
+    markersRef.current = [];
+    infoWindowsRef.current = [];
+
+    if (placesToShow.length === 0) {
+      return;
+    }
+
+    // 주변 문화시설 마커 추가 (필터링된 장소만)
+    const bounds = new window.kakao.maps.LatLngBounds();
+    if (userLat && userLng) {
+      bounds.extend(new window.kakao.maps.LatLng(userLat, userLng)); // 사용자 위치 포함
+    }
+
+    placesToShow.forEach((place, filteredIndex) => {
+      // nearbyPlaces에서의 원본 인덱스 찾기
+      const originalIndex = nearbyPlaces.findIndex(p => p.id === place.id);
+      const placeIndex = originalIndex >= 0 ? originalIndex : filteredIndex;
+      
+      const position = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
+
+      // 문화시설 마커 생성
+      const marker = new window.kakao.maps.Marker({
+        position: position,
+        map: mapInstanceRef.current,
+      });
+
+      // 인포윈도우 내용 생성 (더 상세한 정보 포함)
+      const isAuthenticated = authService.isAuthenticated();
+      const infoContent = `
+        <div style="padding:12px;min-width:200px;max-width:280px;">
+          <div style="font-weight:bold;font-size:14px;margin-bottom:6px;color:#333;">${place.place_name}</div>
+          <div style="font-size:11px;color:#666;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #eee;">
+            ${place.category_name}
+          </div>
+          ${place.road_address_name ? `
+            <div style="font-size:11px;color:#555;margin-bottom:2px;">
+              <span style="color:#999;">도로명:</span> ${place.road_address_name}
+            </div>
+          ` : ''}
+          <div style="font-size:11px;color:#555;margin-bottom:4px;">
+            <span style="color:#999;">지번:</span> ${place.address_name}
+          </div>
+          ${place.phone ? `
+            <div style="font-size:11px;color:#555;margin-bottom:4px;">
+              <span style="color:#999;">전화:</span> ${place.phone}
+            </div>
+          ` : ''}
+          ${place.place_url ? `
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;margin-bottom:6px;">
+              <a href="${place.place_url}" target="_blank" 
+                 style="font-size:11px;color:#16a34a;text-decoration:none;font-weight:500;">
+                카카오맵에서 보기 →
+              </a>
+            </div>
+          ` : ''}
+          ${isAuthenticated ? `
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;">
+              <button id="add-to-plan-btn-${placeIndex}" 
+                      style="width:100%;padding:6px;background:linear-gradient(to right, #22c55e, #16a34a);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;box-shadow:0 2px 4px rgba(34,197,94,0.3);transition:all 0.2s;">
+                플랜에 추가
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      // 인포윈도우 생성
+      const infoWindow = new window.kakao.maps.InfoWindow({
+        content: infoContent,
+      });
+
+      // 마커 클릭 이벤트
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        // 다른 인포윈도우 모두 닫기
+        infoWindowsRef.current.forEach(iw => iw.close());
+        infoWindow.open(mapInstanceRef.current, marker);
+        
+        // 리스트에서 해당 장소 하이라이트
+        setSelectedPlaceIndex(placeIndex);
+        
+        // 리스트로 스크롤 (해당 장소가 보이도록)
+        setTimeout(() => {
+          const listItem = document.getElementById(`place-item-${placeIndex}`);
+          if (listItem) {
+            listItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        
+        // 플랜에 추가 버튼 이벤트 리스너 추가
+        setTimeout(() => {
+          const btn = document.getElementById(`add-to-plan-btn-${placeIndex}`);
+          if (btn) {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              handleAddToPlanClick(place);
+            };
+          }
+        }, 100);
+      });
+
+      markersRef.current.push(marker);
+      infoWindowsRef.current.push(infoWindow);
+      bounds.extend(position);
+    });
+
+    // 모든 마커가 보이도록 지도 범위 조정
+    if (placesToShow.length > 0) {
+      mapInstanceRef.current.setBounds(bounds);
+    }
+  }, [nearbyPlaces, handleAddToPlanClick]);
+
+  // 필터링된 장소가 변경될 때마다 마커 업데이트
+  useEffect(() => {
+    if (filteredPlaces.length > 0 && mapInstanceRef.current && latitude && longitude) {
+      updateMarkers(filteredPlaces, latitude, longitude);
+    } else if (filteredPlaces.length === 0 && mapInstanceRef.current) {
+      // 필터링된 장소가 없으면 모든 마커 제거
+      markersRef.current.forEach(marker => marker.setMap(null));
+      infoWindowsRef.current.forEach(infoWindow => infoWindow.close());
+      markersRef.current = [];
+      infoWindowsRef.current = [];
+    }
+  }, [filteredPlaces, latitude, longitude, updateMarkers]);
 
   const handleDateSelect = useCallback(async () => {
     if (!selectedDate) {
@@ -525,7 +591,7 @@ export const HomeMap = () => {
   return (
     <Card>
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-2xl font-bold">주변 문화시설</h2>
           <Button
             variant="primary"
@@ -536,10 +602,60 @@ export const HomeMap = () => {
             {loading ? '검색 중...' : '문화정보 찾기'}
           </Button>
         </div>
+        
+        {/* 필터 UI */}
+        {nearbyPlaces.length > 0 && (
+          <div className="flex flex-wrap gap-3 mb-3 p-3 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700">카테고리:</span>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="px-3 py-1.5 text-sm border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="all">전체</option>
+                <option value="박물관">박물관</option>
+                <option value="미술관">미술관</option>
+                <option value="도서관">도서관</option>
+                <option value="공연장">공연장</option>
+                <option value="문화원">문화원</option>
+                <option value="전시">전시</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700">반경:</span>
+              <select
+                value={distanceFilter}
+                onChange={(e) => {
+                  setDistanceFilter(Number(e.target.value));
+                  // 반경 변경 시 즉시 재검색
+                  if (mapInstanceRef.current && latitude && longitude) {
+                    loadNearbyPlaces(latitude, longitude, Number(e.target.value));
+                  }
+                }}
+                className="px-3 py-1.5 text-sm border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="1000">1km</option>
+                <option value="2000">2km</option>
+                <option value="3000">3km</option>
+                <option value="5000">5km</option>
+              </select>
+            </div>
+            {filteredPlaces.length !== nearbyPlaces.length && (
+              <span className="text-sm text-gray-600">
+                ({filteredPlaces.length}개 표시 중)
+              </span>
+            )}
+          </div>
+        )}
+        
         {loading && <p className="text-sm text-gray-600">검색 중...</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
         {!loading && !error && nearbyPlaces.length > 0 && (
-          <p className="text-sm text-gray-600">주변 {nearbyPlaces.length}개의 문화시설을 찾았습니다.</p>
+          <p className="text-sm text-gray-600">
+            주변 {nearbyPlaces.length}개의 문화시설을 찾았습니다.
+            {filteredPlaces.length !== nearbyPlaces.length && ` (${filteredPlaces.length}개 필터링됨)`}
+          </p>
         )}
       </div>
       <div
@@ -558,55 +674,84 @@ export const HomeMap = () => {
           </div>
         )}
       </div>
-      {nearbyPlaces.length > 0 && (
+      {(filteredPlaces.length > 0 || nearbyPlaces.length > 0) && (
         <div className="mt-4">
-          <h3 className="font-semibold mb-2">주변 문화시설 목록</h3>
+          <h3 className="font-semibold mb-2">
+            주변 문화시설 목록 
+            {filteredPlaces.length > 0 && (
+              <span className="text-sm font-normal text-gray-600">
+                ({filteredPlaces.length}개)
+              </span>
+            )}
+          </h3>
           <div className="max-h-48 overflow-y-auto space-y-2">
-            {nearbyPlaces.map((place, index) => (
-              <div
-                key={place.id}
-                className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div 
-                  className="cursor-pointer"
+            {(filteredPlaces.length > 0 ? filteredPlaces : nearbyPlaces).map((place, index) => {
+              const originalIndex = nearbyPlaces.findIndex(p => p.id === place.id);
+              const isSelected = selectedPlaceIndex === originalIndex;
+              
+              return (
+                <div
+                  key={place.id}
+                  id={`place-item-${originalIndex}`}
+                  className={`p-3 border-2 rounded-lg transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-green-500 bg-green-50 shadow-md'
+                      : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
+                  }`}
                   onClick={() => {
-                    if (mapInstanceRef.current && markersRef.current[index]) {
+                    if (mapInstanceRef.current && markersRef.current[originalIndex]) {
                       const position = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
                       mapInstanceRef.current.setCenter(position);
                       mapInstanceRef.current.setLevel(3);
                       
                       // 해당 마커의 인포윈도우 열기
-                      if (infoWindowsRef.current[index]) {
+                      if (infoWindowsRef.current[originalIndex]) {
                         // 다른 인포윈도우 모두 닫기
                         infoWindowsRef.current.forEach(iw => iw.close());
-                        infoWindowsRef.current[index].open(mapInstanceRef.current, markersRef.current[index]);
+                        infoWindowsRef.current[originalIndex].open(mapInstanceRef.current, markersRef.current[originalIndex]);
                       }
+                      
+                      // 리스트에서 하이라이트
+                      setSelectedPlaceIndex(originalIndex);
                     }
                   }}
                 >
-                  <div className="font-medium text-sm text-gray-900">{place.place_name}</div>
-                  <div className="text-xs text-gray-600 mt-1">{place.category_name}</div>
-                  <div className="text-xs text-gray-500 mt-1">{place.address_name}</div>
-                  {place.phone && (
-                    <div className="text-xs text-gray-500 mt-1">📞 {place.phone}</div>
+                  <div className="flex items-start gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      isSelected
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {originalIndex + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div className={`font-medium text-sm ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
+                        {place.place_name}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">{place.category_name}</div>
+                      <div className="text-xs text-gray-500 mt-1">{place.address_name}</div>
+                      {place.phone && (
+                        <div className="text-xs text-gray-500 mt-1">📞 {place.phone}</div>
+                      )}
+                    </div>
+                  </div>
+                  {authService.isAuthenticated() && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <Button
+                        variant="primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToPlanClick(place);
+                        }}
+                        className="w-full text-xs py-1"
+                      >
+                        플랜에 추가
+                      </Button>
+                    </div>
                   )}
                 </div>
-                {authService.isAuthenticated() && (
-                  <div className="mt-2 pt-2 border-t border-gray-200">
-                    <Button
-                      variant="primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToPlanClick(place);
-                      }}
-                      className="w-full text-xs py-1"
-                    >
-                      플랜에 추가
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

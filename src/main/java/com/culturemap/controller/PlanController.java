@@ -1,6 +1,7 @@
 package com.culturemap.controller;
 
 import com.culturemap.dto.AddPlaceToPlanRequest;
+import com.culturemap.dto.PlanInviteRequest;
 import com.culturemap.dto.PlanRequest;
 import com.culturemap.dto.PlanResponse;
 import com.culturemap.service.PlanService;
@@ -67,6 +68,20 @@ public class PlanController {
             Authentication authentication) {
         PlanResponse response = planService.addPlaceToPlan(request, authentication);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/invite")
+    public ResponseEntity<Void> inviteMember(
+            @Valid @RequestBody PlanInviteRequest request,
+            Authentication authentication) {
+        planService.inviteMember(request, authentication);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/shared")
+    public ResponseEntity<List<PlanResponse>> getSharedPlans(Authentication authentication) {
+        List<PlanResponse> responses = planService.getSharedPlans(authentication);
+        return ResponseEntity.ok(responses);
     }
 }
 

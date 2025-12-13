@@ -20,7 +20,7 @@ export const Login = () => {
 
     try {
       await authService.login(formData);
-      navigate('/plans');
+      navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || '로그인에 실패했습니다.');
     }

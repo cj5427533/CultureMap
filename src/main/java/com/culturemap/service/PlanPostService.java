@@ -33,7 +33,7 @@ public class PlanPostService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        Plan plan = planRepository.findById(request.getPlanId())
+        Plan plan = planRepository.findByIdWithDetails(request.getPlanId())
                 .orElseThrow(() -> new IllegalArgumentException("플랜을 찾을 수 없습니다"));
 
         if (!plan.getMember().getId().equals(member.getId())) {
@@ -59,7 +59,7 @@ public class PlanPostService {
 
     @Transactional(readOnly = true)
     public PlanPostResponse getPost(Long id) {
-        PlanPost post = planPostRepository.findById(id)
+        PlanPost post = planPostRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
         return toResponse(post);
@@ -73,7 +73,11 @@ public class PlanPostService {
         PlanPost post = planPostRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
-        if (!post.getPlan().getMember().getId().equals(member.getId())) {
+        // 작성자 또는 어드민만 수정 가능
+        boolean isAuthor = post.getPlan().getMember().getId().equals(member.getId());
+        boolean isAdmin = member.getRole() != null && member.getRole().equals("ADMIN");
+        
+        if (!isAuthor && !isAdmin) {
             throw new IllegalArgumentException("권한이 없습니다");
         }
 
@@ -97,7 +101,11 @@ public class PlanPostService {
         PlanPost post = planPostRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다"));
 
-        if (!post.getPlan().getMember().getId().equals(member.getId())) {
+        // 작성자 또는 어드민만 삭제 가능
+        boolean isAuthor = post.getPlan().getMember().getId().equals(member.getId());
+        boolean isAdmin = member.getRole() != null && member.getRole().equals("ADMIN");
+        
+        if (!isAuthor && !isAdmin) {
             throw new IllegalArgumentException("권한이 없습니다");
         }
 
@@ -136,6 +144,8 @@ public class PlanPostService {
                 .title(post.getTitle())
                 .description(post.getDescription())
                 .authorNickname(plan.getMember().getNickname())
+                .averageRating(post.getAverageRating())
+                .ratingCount(post.getRatingCount())
                 .plan(planResponse)
                 .createdAt(post.getCreatedAt())
                 .build();

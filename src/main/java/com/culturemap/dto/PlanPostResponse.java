@@ -17,6 +17,8 @@ public class PlanPostResponse {
     private String title;
     private String description;
     private String authorNickname;
+    private Double averageRating;
+    private Integer ratingCount;
     private PlanResponse plan;
     private LocalDateTime createdAt;
 }

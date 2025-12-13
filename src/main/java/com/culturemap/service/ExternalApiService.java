@@ -25,6 +25,11 @@ public class ExternalApiService {
     private final PlaceRepository placeRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    
+    // API 사용량 통계용 카운터
+    private final java.util.concurrent.atomic.AtomicInteger totalSearchCalls = new java.util.concurrent.atomic.AtomicInteger(0);
+    private final java.util.concurrent.atomic.AtomicInteger todaySearchCalls = new java.util.concurrent.atomic.AtomicInteger(0);
+    private volatile java.time.LocalDate todayResetDate = java.time.LocalDate.now();
 
     @Value("${external.culture.api.key:}")
     private String cultureApiKey;
@@ -203,6 +208,10 @@ public class ExternalApiService {
             
             log.info("총 {}개의 문화시설 검색 완료", allDocuments.size());
             
+            // API 호출 카운터 증가
+            totalSearchCalls.incrementAndGet();
+            updateTodaySearchCounter();
+            
             // 합친 결과를 JSON으로 재구성
             com.fasterxml.jackson.databind.node.ObjectNode resultJson = objectMapper.createObjectNode();
             com.fasterxml.jackson.databind.node.ObjectNode metaNode = objectMapper.createObjectNode();
@@ -218,6 +227,24 @@ public class ExternalApiService {
             log.error("주변 문화시설 검색 실패", e);
             throw new RuntimeException("주변 문화시설 검색에 실패했습니다: " + e.getMessage(), e);
         }
+    }
+    
+    private void updateTodaySearchCounter() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        if (!today.equals(todayResetDate)) {
+            todayResetDate = today;
+            todaySearchCalls.set(0);
+        }
+        todaySearchCalls.incrementAndGet();
+    }
+    
+    public int getTodaySearchCalls() {
+        updateTodaySearchCounter();
+        return todaySearchCalls.get();
+    }
+    
+    public int getTotalSearchCalls() {
+        return totalSearchCalls.get();
     }
 }
 

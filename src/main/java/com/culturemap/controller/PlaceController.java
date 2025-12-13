@@ -1,67 +1,88 @@
 package com.culturemap.controller;
 
-import com.culturemap.domain.Place;
+import com.culturemap.domain.Member;
 import com.culturemap.dto.PlaceRequest;
 import com.culturemap.dto.PlaceResponse;
-import com.culturemap.repository.PlaceRepository;
+import com.culturemap.repository.MemberRepository;
+import com.culturemap.service.CacheService;
 import com.culturemap.service.ExternalApiService;
+import com.culturemap.service.PlaceService;
+import com.culturemap.service.RateLimitService;
+import com.culturemap.util.HttpUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/places")
 @RequiredArgsConstructor
 public class PlaceController {
 
-    private final PlaceRepository placeRepository;
+    private final PlaceService placeService;
     private final ExternalApiService externalApiService;
+    private final RateLimitService rateLimitService;
+    private final CacheService cacheService;
+    private final MemberRepository memberRepository;
 
     @GetMapping
-    public ResponseEntity<List<PlaceResponse>> searchPlaces(@RequestParam(required = false) String keyword) {
-        List<Place> places;
-        if (keyword != null && !keyword.isEmpty()) {
-            places = placeRepository.findAll().stream()
-                    .filter(p -> p.getName().contains(keyword) || 
-                               (p.getAddress() != null && p.getAddress().contains(keyword)))
-                    .collect(Collectors.toList());
-        } else {
-            places = placeRepository.findAll();
-        }
-
-        List<PlaceResponse> responses = places.stream()
-                .map(p -> PlaceResponse.builder()
-                        .id(p.getId())
-                        .name(p.getName())
-                        .address(p.getAddress())
-                        .category(p.getCategory())
-                        .latitude(p.getLatitude())
-                        .longitude(p.getLongitude())
-                        .description(p.getDescription())
-                        .build())
-                .collect(Collectors.toList());
-
+    public ResponseEntity<List<PlaceResponse>> searchPlaces(
+            @RequestParam(required = false) String keyword,
+            Authentication authentication) {
+        Long userId = getUserId(authentication);
+        List<PlaceResponse> responses = placeService.searchPlaces(keyword, userId);
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<List<PlaceResponse>> getPopularPlaces() {
+        List<PlaceResponse> responses = placeService.getPopularPlaces();
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/recent-searches")
+    public ResponseEntity<List<String>> getRecentSearches(Authentication authentication) {
+        Long userId = getUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<String> searches = cacheService.getRecentSearches(userId);
+        return ResponseEntity.ok(searches);
+    }
+
+    @DeleteMapping("/recent-searches")
+    public ResponseEntity<Void> clearRecentSearches(Authentication authentication) {
+        Long userId = getUserId(authentication);
+        if (userId != null) {
+            cacheService.clearRecentSearches(userId);
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    private Long getUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        try {
+            String email = ((UserDetails) authentication.getPrincipal()).getUsername();
+            return memberRepository.findByEmail(email)
+                    .map(Member::getId)
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PlaceResponse> getPlace(@PathVariable Long id) {
-        Place place = placeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("장소를 찾을 수 없습니다"));
-
-        PlaceResponse response = PlaceResponse.builder()
-                .id(place.getId())
-                .name(place.getName())
-                .address(place.getAddress())
-                .category(place.getCategory())
-                .latitude(place.getLatitude())
-                .longitude(place.getLongitude())
-                .description(place.getDescription())
-                .build();
-
+        PlaceResponse response = placeService.getPlace(id);
         return ResponseEntity.ok(response);
     }
 
@@ -70,49 +91,7 @@ public class PlaceController {
      */
     @PostMapping
     public ResponseEntity<PlaceResponse> createPlace(@RequestBody PlaceRequest request) {
-        // externalId로 중복 체크
-        Place existingPlace = null;
-        if (request.getExternalId() != null && !request.getExternalId().isEmpty()) {
-            existingPlace = placeRepository.findByExternalId(request.getExternalId()).orElse(null);
-        }
-        
-        // 이미 존재하는 경우 기존 장소 반환
-        if (existingPlace != null) {
-            PlaceResponse response = PlaceResponse.builder()
-                    .id(existingPlace.getId())
-                    .name(existingPlace.getName())
-                    .address(existingPlace.getAddress())
-                    .category(existingPlace.getCategory())
-                    .latitude(existingPlace.getLatitude())
-                    .longitude(existingPlace.getLongitude())
-                    .description(existingPlace.getDescription())
-                    .build();
-            return ResponseEntity.ok(response);
-        }
-        
-        // 새 장소 생성
-        Place place = Place.builder()
-                .name(request.getName())
-                .address(request.getAddress())
-                .category(request.getCategory())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
-                .description(request.getDescription())
-                .externalId(request.getExternalId())
-                .build();
-        
-        place = placeRepository.save(place);
-        
-        PlaceResponse response = PlaceResponse.builder()
-                .id(place.getId())
-                .name(place.getName())
-                .address(place.getAddress())
-                .category(place.getCategory())
-                .latitude(place.getLatitude())
-                .longitude(place.getLongitude())
-                .description(place.getDescription())
-                .build();
-        
+        PlaceResponse response = placeService.createPlace(request);
         return ResponseEntity.ok(response);
     }
 
@@ -127,7 +106,18 @@ public class PlaceController {
     public ResponseEntity<String> searchNearbyCulturePlaces(
             @RequestParam double lng,
             @RequestParam double lat,
-            @RequestParam(defaultValue = "2000") int radius) {
+            @RequestParam(defaultValue = "2000") int radius,
+            HttpServletRequest httpRequest) {
+        
+        String clientIp = HttpUtil.getClientIpAddress(httpRequest);
+        
+        // 레이트 리밋 확인
+        if (rateLimitService.isSearchExceeded(clientIp)) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "검색 API 호출 횟수를 초과했습니다. 1분 후 다시 시도해주세요.");
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+        }
+        
         String response = externalApiService.searchNearbyCulturePlaces(lng, lat, radius);
         return ResponseEntity.ok(response);
     }

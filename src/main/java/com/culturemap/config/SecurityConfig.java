@@ -40,7 +40,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/h2-console/**", "/swagger-ui/**", "/api-docs/**", "/api/places/kakao/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.disable())
+                        .contentTypeOptions(contentTypeOptions -> contentTypeOptions.disable())
+                )
                 // JWT 필터는 인증이 필요한 요청에만 적용되도록 설정
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

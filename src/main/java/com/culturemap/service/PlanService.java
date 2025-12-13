@@ -5,12 +5,15 @@ import com.culturemap.domain.Plan;
 import com.culturemap.domain.PlanPlace;
 import com.culturemap.domain.Place;
 import com.culturemap.dto.AddPlaceToPlanRequest;
+import com.culturemap.dto.PlanInviteRequest;
 import com.culturemap.dto.PlanRequest;
 import com.culturemap.dto.PlanResponse;
 import com.culturemap.dto.PlaceResponse;
+import com.culturemap.domain.PlanMember;
 import com.culturemap.repository.MemberRepository;
 import com.culturemap.repository.PlanRepository;
 import com.culturemap.repository.PlaceRepository;
+import com.culturemap.repository.PlanMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,6 +33,7 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final MemberRepository memberRepository;
     private final PlaceRepository placeRepository;
+    private final PlanMemberRepository planMemberRepository;
 
     public PlanResponse createPlan(PlanRequest request, Authentication authentication) {
         String email = ((UserDetails) authentication.getPrincipal()).getUsername();
@@ -101,10 +105,14 @@ public class PlanService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        Plan plan = planRepository.findById(id)
+        Plan plan = planRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("플랜을 찾을 수 없습니다"));
 
-        if (!plan.getMember().getId().equals(member.getId())) {
+        // 플랜 소유자 또는 협업 멤버인지 확인
+        boolean isOwner = plan.getMember().getId().equals(member.getId());
+        boolean isCollaborator = planMemberRepository.existsByPlanIdAndMemberId(id, member.getId());
+
+        if (!isOwner && !isCollaborator) {
             throw new IllegalArgumentException("권한이 없습니다");
         }
 
@@ -116,10 +124,16 @@ public class PlanService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        Plan plan = planRepository.findById(id)
+        Plan plan = planRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("플랜을 찾을 수 없습니다"));
 
-        if (!plan.getMember().getId().equals(member.getId())) {
+        // 플랜 소유자 또는 EDITOR 권한 협업 멤버만 수정 가능
+        boolean isOwner = plan.getMember().getId().equals(member.getId());
+        boolean isEditor = planMemberRepository.findByPlanIdAndMemberId(id, member.getId())
+                .map(pm -> "EDITOR".equals(pm.getRole()))
+                .orElse(false);
+
+        if (!isOwner && !isEditor) {
             throw new IllegalArgumentException("권한이 없습니다");
         }
 
@@ -166,7 +180,7 @@ public class PlanService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        Plan plan = planRepository.findById(id)
+        Plan plan = planRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("플랜을 찾을 수 없습니다"));
 
         if (!plan.getMember().getId().equals(member.getId())) {
@@ -224,6 +238,53 @@ public class PlanService {
         planRepository.save(plan);
 
         return toResponse(plan);
+    }
+
+    public void inviteMember(PlanInviteRequest request, Authentication authentication) {
+        String email = ((UserDetails) authentication.getPrincipal()).getUsername();
+        Member inviter = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        Plan plan = planRepository.findById(request.getPlanId())
+                .orElseThrow(() -> new IllegalArgumentException("플랜을 찾을 수 없습니다"));
+
+        // 플랜 소유자만 초대 가능
+        if (!plan.getMember().getId().equals(inviter.getId())) {
+            throw new IllegalArgumentException("플랜 소유자만 멤버를 초대할 수 있습니다");
+        }
+
+        Member invitee = memberRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("초대할 사용자를 찾을 수 없습니다"));
+
+        // 자기 자신은 초대 불가
+        if (invitee.getId().equals(inviter.getId())) {
+            throw new IllegalArgumentException("자기 자신은 초대할 수 없습니다");
+        }
+
+        // 이미 초대된 멤버인지 확인
+        if (planMemberRepository.existsByPlanIdAndMemberId(request.getPlanId(), invitee.getId())) {
+            throw new IllegalArgumentException("이미 초대된 멤버입니다");
+        }
+
+        PlanMember planMember = PlanMember.builder()
+                .plan(plan)
+                .member(invitee)
+                .role(request.getRole())
+                .build();
+
+        planMemberRepository.save(planMember);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlanResponse> getSharedPlans(Authentication authentication) {
+        String email = ((UserDetails) authentication.getPrincipal()).getUsername();
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        return planMemberRepository.findByMemberId(member.getId()).stream()
+                .map(PlanMember::getPlan)
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     private PlanResponse toResponse(Plan plan) {

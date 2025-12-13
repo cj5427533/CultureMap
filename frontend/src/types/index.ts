@@ -1,7 +1,9 @@
 export interface AuthResponse {
   token: string;
+  refreshToken?: string;
   email: string;
   nickname: string;
+  role?: string;
 }
 
 export interface SignupRequest {
@@ -50,13 +52,53 @@ export interface PlanPost {
   title: string;
   description?: string;
   authorNickname: string;
+  averageRating?: number;
+  ratingCount?: number;
   plan: Plan;
   createdAt: string;
+}
+
+export interface Comment {
+  id: number;
+  postId: number;
+  content: string;
+  rating?: number;
+  authorNickname: string;
+  createdAt: string;
+  updatedAt: string;
+  isAuthor: boolean;
+}
+
+export interface CommentRequest {
+  postId: number;
+  content: string;
+  rating?: number;
+}
+
+export interface Rating {
+  id?: number;
+  postId: number;
+  score: number;
+  userRating?: number; // 현재 사용자가 준 별점
 }
 
 export interface PlanPostRequest {
   planId: number;
   title: string;
   description?: string;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalPlans: number;
+  totalPosts: number;
+  totalComments: number;
+  totalRatings: number;
+  apiUsage: {
+    directionsApiCallsToday: number;
+    directionsApiCallsThisMonth: number;
+    searchApiCallsToday: number;
+    searchApiCallsThisMonth: number;
+  };
 }
 

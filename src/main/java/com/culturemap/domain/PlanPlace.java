@@ -10,7 +10,10 @@ import lombok.Setter;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "plan_places")
+@Table(name = "plan_places", indexes = {
+    @Index(name = "idx_plan_place_plan", columnList = "plan_id"),
+    @Index(name = "idx_plan_place_place", columnList = "place_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

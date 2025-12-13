@@ -36,6 +36,15 @@
   .animate-fade-in-up {
     animation: fade-in-up 0.8s ease-out;
   }
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
 }
 
 @layer components {

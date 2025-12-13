@@ -1,10 +1,16 @@
 import { useEffect, useRef } from 'react';
 import type { Place } from '../types/index';
 
+interface RoutePoint {
+  lat: number;
+  lng: number;
+}
+
 interface KakaoMapProps {
   places: Place[];
   center?: { lat: number; lng: number };
   height?: string;
+  routePath?: RoutePoint[];
 }
 
 declare global {
@@ -13,10 +19,11 @@ declare global {
   }
 }
 
-export const KakaoMap = ({ places, center, height = '400px' }: KakaoMapProps) => {
+export const KakaoMap = ({ places, center, height = '400px', routePath }: KakaoMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const polylineRef = useRef<any>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -27,9 +34,13 @@ export const KakaoMap = ({ places, center, height = '400px' }: KakaoMapProps) =>
         return;
       }
 
-      // 기존 마커 제거
+      // 기존 마커/경로 제거
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
+      if (polylineRef.current) {
+        polylineRef.current.setMap(null);
+        polylineRef.current = null;
+      }
 
       // 기존 지도가 있으면 제거하지 않고 마커만 업데이트
       if (mapInstanceRef.current) {
@@ -44,13 +55,33 @@ export const KakaoMap = ({ places, center, height = '400px' }: KakaoMapProps) =>
                 Number(place.longitude)
               );
 
+              // 커스텀 마커 이미지 생성 (초록색 원에 번호)
+              const markerNumber = index + 1;
+              const markerSize = new window.kakao.maps.Size(40, 40);
+              const markerOffset = new window.kakao.maps.Point(20, 20);
+              
+              // SVG를 사용한 커스텀 마커
+              const markerImageSrc = `data:image/svg+xml;base64,${btoa(`
+                <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="20" cy="20" r="18" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+                  <text x="20" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">${markerNumber}</text>
+                </svg>
+              `)}`;
+              
+              const markerImage = new window.kakao.maps.MarkerImage(
+                markerImageSrc,
+                markerSize,
+                { offset: markerOffset }
+              );
+
               const marker = new window.kakao.maps.Marker({
                 position: position,
+                image: markerImage,
                 map: mapInstanceRef.current,
               });
 
               const infoWindow = new window.kakao.maps.InfoWindow({
-                content: `<div style="padding:5px;font-size:12px;">${index + 1}. ${place.name}</div>`,
+                content: `<div style="padding:5px;font-size:12px;">${markerNumber}. ${place.name}</div>`,
               });
 
               window.kakao.maps.event.addListener(marker, 'click', () => {
@@ -70,6 +101,22 @@ export const KakaoMap = ({ places, center, height = '400px' }: KakaoMapProps) =>
               Number(places[0].longitude)
             ));
             mapInstanceRef.current.setLevel(3);
+          }
+
+          // 경로 선 렌더링
+          if (routePath && routePath.length > 1) {
+            const path = routePath.map(p => new window.kakao.maps.LatLng(p.lat, p.lng));
+            polylineRef.current = new window.kakao.maps.Polyline({
+              path,
+              strokeWeight: 5,
+              strokeColor: '#22c55e',
+              strokeOpacity: 0.8,
+              strokeStyle: 'solid',
+              map: mapInstanceRef.current,
+            });
+            const boundsWithRoute = new window.kakao.maps.LatLngBounds();
+            path.forEach(latlng => boundsWithRoute.extend(latlng));
+            mapInstanceRef.current.setBounds(boundsWithRoute);
           }
         }
         return;
@@ -103,13 +150,33 @@ export const KakaoMap = ({ places, center, height = '400px' }: KakaoMapProps) =>
                 Number(place.longitude)
               );
 
+              // 커스텀 마커 이미지 생성 (초록색 원에 번호)
+              const markerNumber = index + 1;
+              const markerSize = new window.kakao.maps.Size(40, 40);
+              const markerOffset = new window.kakao.maps.Point(20, 20);
+              
+              // SVG를 사용한 커스텀 마커
+              const markerImageSrc = `data:image/svg+xml;base64,${btoa(`
+                <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="20" cy="20" r="18" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+                  <text x="20" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">${markerNumber}</text>
+                </svg>
+              `)}`;
+              
+              const markerImage = new window.kakao.maps.MarkerImage(
+                markerImageSrc,
+                markerSize,
+                { offset: markerOffset }
+              );
+
               const marker = new window.kakao.maps.Marker({
                 position: position,
+                image: markerImage,
                 map: map,
               });
 
               const infoWindow = new window.kakao.maps.InfoWindow({
-                content: `<div style="padding:5px;font-size:12px;">${index + 1}. ${place.name}</div>`,
+                content: `<div style="padding:5px;font-size:12px;">${markerNumber}. ${place.name}</div>`,
               });
 
               window.kakao.maps.event.addListener(marker, 'click', () => {
@@ -129,6 +196,21 @@ export const KakaoMap = ({ places, center, height = '400px' }: KakaoMapProps) =>
               Number(places[0].longitude)
             ));
             map.setLevel(3);
+          }
+
+          if (routePath && routePath.length > 1) {
+            const path = routePath.map(p => new window.kakao.maps.LatLng(p.lat, p.lng));
+            polylineRef.current = new window.kakao.maps.Polyline({
+              path,
+              strokeWeight: 5,
+              strokeColor: '#22c55e',
+              strokeOpacity: 0.8,
+              strokeStyle: 'solid',
+              map,
+            });
+            const boundsWithRoute = new window.kakao.maps.LatLngBounds();
+            path.forEach(latlng => boundsWithRoute.extend(latlng));
+            map.setBounds(boundsWithRoute);
           }
         }
       });
@@ -169,7 +251,7 @@ export const KakaoMap = ({ places, center, height = '400px' }: KakaoMapProps) =>
     return () => {
       // cleanup은 하지 않음 (다른 컴포넌트에서도 사용할 수 있음)
     };
-  }, [places, center]);
+  }, [places, center, routePath]);
 
   return (
     <div

@@ -38,5 +38,14 @@ export const planService = {
     const response = await api.post<Plan>('/plans/add-place', data);
     return response.data;
   },
+
+  inviteMember: async (data: { planId: number; email: string; role: string }): Promise<void> => {
+    await api.post('/plans/invite', data);
+  },
+
+  getSharedPlans: async (): Promise<Plan[]> => {
+    const response = await api.get<Plan[]>('/plans/shared');
+    return response.data;
+  },
 };
 

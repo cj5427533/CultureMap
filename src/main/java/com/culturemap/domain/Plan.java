@@ -12,7 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "plans")
+@Table(name = "plans", indexes = {
+    @Index(name = "idx_plan_member", columnList = "member_id"),
+    @Index(name = "idx_plan_date", columnList = "plan_date"),
+    @Index(name = "idx_plan_member_date", columnList = "member_id,plan_date")
+})
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,6 +40,10 @@ public class Plan {
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PlanPlace> planPlaces = new ArrayList<>();
+
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<PlanMember> planMembers = new ArrayList<>();
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -42,6 +42,15 @@ export const Header = ({ onLogout }: HeaderProps) => {
                   공유 게시판
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-600 transition-all duration-200 group-hover:w-full"></span>
                 </Link>
+                {user && user.role === 'ADMIN' && (
+                  <Link 
+                    to="/admin" 
+                    className="text-gray-700 hover:text-red-600 font-semibold transition-colors duration-200 relative group"
+                  >
+                    관리자
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 transition-all duration-200 group-hover:w-full"></span>
+                  </Link>
+                )}
                 {user && (
                   <span className="text-gray-700 text-sm font-medium px-3 py-1.5 bg-green-50 rounded-full border border-green-200">
                     {user.nickname}님
