@@ -33,7 +33,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    @Value("${cors.allowed-origins:http://localhost:5173}")
     private String allowedOrigins;
 
     @Bean
@@ -96,16 +96,38 @@ public class SecurityConfig {
         };
     }
 
+    /**
+     * CORS 설정
+     * - 허용 Origin: http://localhost:5173, https://<프론트_배포_도메인> (환경변수로 설정 가능)
+     * - 허용 메서드: GET, POST, PUT, DELETE, OPTIONS
+     * - 허용 헤더: Authorization, Content-Type
+     * - allowCredentials: true
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 환경 변수에서 허용된 Origin 목록 가져오기 (쉼표로 구분)
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        
+        // 허용된 Origin 목록 (환경변수에서 가져오거나 기본값 사용)
+        // 형식: "http://localhost:5173,https://your-frontend-domain.com"
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
         configuration.setAllowedOrigins(origins);
+        
+        // 허용 메서드
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        
+        // 허용 헤더
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        
+        // 노출 헤더
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        
+        // 인증 정보 허용
         configuration.setAllowCredentials(true);
+        
+        // 프리플라이트 요청 캐시 시간 (1시간)
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
