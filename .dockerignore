@@ -42,6 +42,7 @@ nbdist
 **\.env.local
 **\.env.development
 **\.env.production
+!frontend/.env.production
 **\.env.test
 **\.env*.local
 

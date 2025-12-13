@@ -592,13 +592,22 @@ export const HomeMap = () => {
 
     const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
     console.log('API 키 확인:', apiKey ? '설정됨' : '없음');
-    console.log('API 키 값:', apiKey);
+    console.log('API 키 값:', apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined');
     console.log('API 키 타입:', typeof apiKey);
     console.log('API 키 길이:', apiKey?.length);
+    console.log('모든 환경변수:', import.meta.env);
     
-    if (!apiKey) {
-      setError('Kakao API 키가 설정되지 않았습니다. .env 파일을 확인해주세요.');
+    if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
+      const errorMsg = 'Kakao API 키가 설정되지 않았습니다.\n' +
+        '배포 환경에서는 빌드 시 VITE_KAKAO_MAP_API_KEY 환경변수가 필요합니다.\n' +
+        'Fly.io 배포 시: fly deploy --build-arg VITE_KAKAO_MAP_API_KEY=your_key\n' +
+        '또는 .env.production 파일을 생성하세요.';
+      setError(errorMsg);
       console.error('VITE_KAKAO_MAP_API_KEY가 설정되지 않았습니다.');
+      console.error('현재 환경변수:', {
+        VITE_KAKAO_MAP_API_KEY: apiKey,
+        VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
+      });
       return;
     }
 
@@ -644,9 +653,18 @@ export const HomeMap = () => {
       console.error('API 키 (처음 10자):', apiKey.substring(0, 10));
       
       // API 키가 올바른 형식인지 확인
-      if (apiKey.length < 30) {
+      if (apiKey && apiKey.length < 30) {
         console.error('⚠️ API 키 길이가 너무 짧습니다. 올바른 키인지 확인해주세요.');
-        setError('API 키가 올바르지 않습니다. .env 파일의 VITE_KAKAO_MAP_API_KEY를 확인해주세요.');
+        console.error('현재 API 키 길이:', apiKey.length);
+        console.error('API 키 (처음 20자):', apiKey.substring(0, 20));
+        setError(`API 키가 올바르지 않습니다.\n` +
+          `현재 키 길이: ${apiKey.length}자 (최소 30자 필요)\n` +
+          `JavaScript 키를 사용하고 있는지 확인하세요.\n` +
+          `Kakao Developers 콘솔 > 앱 키 > JavaScript 키를 확인하세요.`);
+      } else if (!apiKey || apiKey === 'undefined') {
+        setError('API 키가 빌드에 포함되지 않았습니다.\n' +
+          '배포 시 --build-arg VITE_KAKAO_MAP_API_KEY=your_key를 사용하거나\n' +
+          '.env.production 파일을 생성하세요.');
       }
     };
 

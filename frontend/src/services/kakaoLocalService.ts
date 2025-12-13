@@ -24,6 +24,24 @@ export interface KakaoLocalResponse {
 
 import api from '../utils/api';
 
+// 백엔드가 문자열/객체/에러 HTML을 반환할 수 있으므로 안전하게 파싱
+const parseKakaoResponse = (raw: any, context: string): KakaoLocalResponse => {
+  if (typeof raw !== 'string') {
+    return raw as KakaoLocalResponse;
+  }
+
+  // HTML이 오면 JSON 파싱 전에 바로 에러를 던져서 "Unexpected token <"를 방지
+  if (raw.trim().startsWith('<')) {
+    throw new Error(`${context}: JSON이 아닌 HTML 응답을 받았습니다. (아마 401/403/500 등 백엔드 에러)`);
+  }
+
+  try {
+    return JSON.parse(raw) as KakaoLocalResponse;
+  } catch (e) {
+    throw new Error(`${context}: Kakao 응답 파싱 실패 - ${e instanceof Error ? e.message : String(e)}`);
+  }
+};
+
 export const kakaoLocalService = {
   /**
    * 주변 문화시설 검색 (카테고리: 문화시설)
@@ -47,10 +65,7 @@ export const kakaoLocalService = {
         },
       });
 
-      // 백엔드가 Kakao API 응답을 JSON 문자열로 반환하므로 파싱
-      const data: KakaoLocalResponse = typeof response.data === 'string' 
-        ? JSON.parse(response.data) 
-        : response.data;
+      const data: KakaoLocalResponse = parseKakaoResponse(response.data, '주변 문화시설 검색');
       
       console.log('검색된 문화시설 수:', data.documents.length);
       return data.documents;
@@ -101,10 +116,7 @@ export const kakaoLocalService = {
         },
       });
 
-      // 백엔드가 Kakao API 응답을 JSON 문자열로 반환하므로 파싱
-      const data: KakaoLocalResponse = typeof response.data === 'string' 
-        ? JSON.parse(response.data) 
-        : response.data;
+      const data: KakaoLocalResponse = parseKakaoResponse(response.data, '키워드 검색');
       
       console.log('키워드 검색 결과:', data.documents.length);
       return data.documents;
