@@ -16,11 +16,7 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 COPY package*.json ./
 RUN npm ci
 
-# .env.production 파일을 명시적으로 먼저 복사 (dockerignore 예외 처리)
-# 루트 .dockerignore에서 제외되므로 명시적으로 복사
-COPY .env.production .env.production* ./
-
-# 소스 코드 복사
+# 소스 코드 복사 (.env.production 포함, 있으면)
 COPY . .
 
 # .env 파일이 있으면 제거 (충돌 방지)
