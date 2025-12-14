@@ -36,11 +36,14 @@ export const Posts = () => {
 
   const loadPosts = async () => {
     try {
+      setLoading(true);
       const data = await postService.getAllPosts();
-      setAllPosts(data);
-      setPosts(data);
+      setAllPosts(data || []);
+      setPosts(data || []);
     } catch (err) {
       console.error('게시글 로드 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '게시글 목록을 불러오는데 실패했습니다.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

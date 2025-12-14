@@ -49,7 +49,10 @@ export const PlanForm = () => {
   const loadPlan = async (planId: number) => {
     try {
       const plan = await planService.getPlan(planId);
-      const sortedPlaces = plan.places.sort((a, b) => {
+      if (!plan) {
+        throw new Error('플랜 데이터가 없습니다.');
+      }
+      const sortedPlaces = (plan.places || []).sort((a, b) => {
         if (!a.visitTime && !b.visitTime) return (a.visitOrder || 0) - (b.visitOrder || 0);
         if (!a.visitTime) return 1;
         if (!b.visitTime) return -1;
@@ -64,14 +67,16 @@ export const PlanForm = () => {
       });
       
       setFormData({
-        planDate: plan.planDate,
+        planDate: plan.planDate || new Date().toISOString().split('T')[0],
         title: plan.title || '',
         placeIds: sortedPlaces.map(p => p.id),
         visitTimes,
       });
       setSelectedPlaces(sortedPlaces);
-    } catch {
-      alert('플랜을 불러오는데 실패했습니다.');
+    } catch (err) {
+      console.error('플랜 로드 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '플랜을 불러오는데 실패했습니다.';
+      alert(errorMessage);
       navigate('/plans');
     }
   };
@@ -79,18 +84,31 @@ export const PlanForm = () => {
   const loadPlaces = async () => {
     try {
       const data = await placeService.searchPlaces();
-      setPlaces(data);
+      setPlaces(data || []);
     } catch (err) {
       console.error('장소 로드 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '장소 목록을 불러오는데 실패했습니다.';
+      // 장소 로드 실패는 조용히 처리 (빈 배열로 설정)
+      setPlaces([]);
     }
   };
 
   const handleSearch = async () => {
+    if (!searchKeyword || !searchKeyword.trim()) {
+      alert('검색어를 입력해주세요.');
+      return;
+    }
     try {
-      const data = await placeService.searchPlaces(searchKeyword);
-      setPlaces(data);
+      const data = await placeService.searchPlaces(searchKeyword.trim());
+      setPlaces(data || []);
+      if (data && data.length === 0) {
+        // 검색 결과가 없을 때는 조용히 처리 (이미 빈 배열로 설정됨)
+      }
     } catch (err) {
       console.error('장소 검색 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '장소 검색에 실패했습니다.';
+      alert(errorMessage);
+      setPlaces([]);
     }
   };
 
@@ -255,8 +273,16 @@ export const PlanForm = () => {
   };
 
   const handleCreatePlan = async () => {
+    if (!formData.planDate) {
+      alert('날짜를 선택해주세요.');
+      return;
+    }
     if (!formData.title || !formData.title.trim()) {
       alert('플랜 이름을 입력해주세요.');
+      return;
+    }
+    if (formData.title.trim().length > 100) {
+      alert('플랜 이름은 100자 이하여야 합니다.');
       return;
     }
 
@@ -270,12 +296,14 @@ export const PlanForm = () => {
       };
       
       const createdPlan = await planService.createPlan(submitData);
+      if (!createdPlan || !createdPlan.id) {
+        throw new Error('플랜 생성 응답이 올바르지 않습니다.');
+      }
       alert('플랜이 생성되었습니다! 이제 장소를 추가할 수 있습니다.');
       navigate(`/plans/${createdPlan.id}/edit`);
     } catch (err) {
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '플랜 생성에 실패했습니다.'
-        : '플랜 생성에 실패했습니다.';
+      console.error('플랜 생성 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '플랜 생성에 실패했습니다.';
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -284,6 +312,20 @@ export const PlanForm = () => {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    // 입력 검증
+    if (!formData.planDate) {
+      alert('날짜를 선택해주세요.');
+      return;
+    }
+    if (!formData.title || !formData.title.trim()) {
+      alert('플랜 이름을 입력해주세요.');
+      return;
+    }
+    if (formData.title.trim().length > 100) {
+      alert('플랜 이름은 100자 이하여야 합니다.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -299,24 +341,30 @@ export const PlanForm = () => {
       
       const submitData: PlanRequest = {
         planDate: formData.planDate,
-        title: formData.title,
-        placeIds: formData.placeIds,
+        title: formData.title.trim(),
+        placeIds: formData.placeIds || [],
         visitTimes: Object.keys(visitTimes).length > 0 ? visitTimes : undefined
       };
       
       if (isEdit && id) {
-        await planService.updatePlan(parseInt(id), submitData);
+        const planId = parseInt(id);
+        if (isNaN(planId) || planId <= 0) {
+          throw new Error('유효하지 않은 플랜 ID입니다.');
+        }
+        await planService.updatePlan(planId, submitData);
         alert('플랜이 수정되었습니다!');
         navigate('/plans');
       } else {
-        await planService.createPlan(submitData);
+        const createdPlan = await planService.createPlan(submitData);
+        if (!createdPlan || !createdPlan.id) {
+          throw new Error('플랜 생성 응답이 올바르지 않습니다.');
+        }
         alert('플랜이 생성되었습니다!');
         navigate('/plans');
       }
     } catch (err) {
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || '저장에 실패했습니다.'
-        : '저장에 실패했습니다.';
+      console.error('플랜 저장 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '저장에 실패했습니다.';
       alert(errorMessage);
     } finally {
       setLoading(false);

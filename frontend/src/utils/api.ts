@@ -144,12 +144,33 @@ api.interceptors.response.use(
       }
     }
 
-    // 403 에러나 기타 에러는 기존 로직 유지
+    // 403 에러 처리
     if (status === 403) {
       console.warn('권한 오류 발생:', status, error.config?.url);
       if (window.location.pathname !== '/login') {
-        alert('접근 권한이 없습니다.');
+        const errorMessage = error.response?.data?.message || '접근 권한이 없습니다.';
+        alert(errorMessage);
       }
+    }
+
+    // 404 에러 처리
+    if (status === 404) {
+      console.warn('리소스를 찾을 수 없음:', status, error.config?.url);
+      const errorMessage = error.response?.data?.message || '요청한 리소스를 찾을 수 없습니다.';
+      // 404는 alert를 표시하지 않고 상위에서 처리하도록 함
+    }
+
+    // 500 에러 처리
+    if (status === 500) {
+      console.error('서버 오류 발생:', status, error.config?.url);
+      const errorMessage = error.response?.data?.message || '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      // 500은 상위에서 처리하도록 함
+    }
+
+    // 네트워크 에러 처리
+    if (!error.response) {
+      console.error('네트워크 오류:', error.message);
+      // 네트워크 에러는 상위에서 처리하도록 함
     }
 
     return Promise.reject(error);

@@ -31,17 +31,23 @@ export const PlanDetail = () => {
 
   const loadPlan = async (planId: number) => {
     try {
+      setLoading(true);
       const data = await planService.getPlan(planId);
+      if (!data) {
+        throw new Error('플랜 데이터가 없습니다.');
+      }
       // visitTime 기준으로 정렬
-      const sortedPlaces = [...data.places].sort((a, b) => {
+      const sortedPlaces = [...(data.places || [])].sort((a, b) => {
         if (!a.visitTime && !b.visitTime) return (a.visitOrder || 0) - (b.visitOrder || 0);
         if (!a.visitTime) return 1;
         if (!b.visitTime) return -1;
         return a.visitTime.localeCompare(b.visitTime);
       });
       setPlan({ ...data, places: sortedPlaces });
-    } catch {
-      alert('플랜을 불러오는데 실패했습니다.');
+    } catch (err) {
+      console.error('플랜 로드 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '플랜을 불러오는데 실패했습니다.';
+      alert(errorMessage);
       navigate('/plans');
     } finally {
       setLoading(false);
@@ -62,7 +68,10 @@ export const PlanDetail = () => {
   }, [plan?.id]);
 
   const handleRouteRequest = async () => {
-    if (!plan) return;
+    if (!plan) {
+      setRouteError('플랜 정보가 없습니다.');
+      return;
+    }
     if (validPlacesWithCoords.length < 2) {
       setRouteError('경로를 계산하려면 2개 이상의 장소가 필요합니다.');
       return;

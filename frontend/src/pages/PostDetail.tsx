@@ -71,10 +71,16 @@ export const PostDetail = () => {
 
   const loadPost = async (postId: number) => {
     try {
+      setLoading(true);
       const data = await postService.getPost(postId);
+      if (!data) {
+        throw new Error('게시글 데이터가 없습니다.');
+      }
       setPost(data);
-    } catch {
-      alert('게시글을 불러오는데 실패했습니다.');
+    } catch (err) {
+      console.error('게시글 로드 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '게시글을 불러오는데 실패했습니다.';
+      alert(errorMessage);
       navigate('/posts');
     } finally {
       setLoading(false);
@@ -82,14 +88,18 @@ export const PostDetail = () => {
   };
 
   const handleDelete = async () => {
-    if (!post) return;
+    if (!post) {
+      alert('게시글 정보가 없습니다.');
+      return;
+    }
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
     try {
       await postService.deletePost(post.id);
       navigate('/posts');
-    } catch {
-      alert('삭제에 실패했습니다.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '삭제에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -138,9 +148,12 @@ export const PostDetail = () => {
     setLoadingComments(true);
     try {
       const data = await commentService.getComments(postId);
-      setComments(data);
-    } catch {
-      console.error('댓글 로드 실패');
+      setComments(data || []);
+    } catch (err) {
+      console.error('댓글 로드 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '댓글을 불러오는데 실패했습니다.';
+      // 댓글 로드 실패는 사용자에게 알리지 않고 빈 배열로 처리
+      setComments([]);
     } finally {
       setLoadingComments(false);
     }

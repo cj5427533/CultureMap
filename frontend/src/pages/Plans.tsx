@@ -42,11 +42,15 @@ export const Plans = () => {
 
   const loadPlans = async () => {
     try {
+      setLoading(true);
       const data = await planService.getMyPlans();
-      setAllPlans(data);
-      setFilteredPlans(data);
+      setAllPlans(data || []);
+      setFilteredPlans(data || []);
     } catch (err) {
       console.error('플랜 로드 실패:', err);
+      const errorMessage = err instanceof Error ? err.message : '플랜 목록을 불러오는데 실패했습니다.';
+      // 에러 상태를 표시할 수 있도록 개선 가능 (현재는 콘솔만)
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -57,8 +61,9 @@ export const Plans = () => {
     try {
       await planService.deletePlan(id);
       loadPlans();
-    } catch {
-      alert('삭제에 실패했습니다.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '삭제에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
