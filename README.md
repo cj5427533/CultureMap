@@ -70,32 +70,32 @@
 
 ```mermaid
 flowchart TB
-    subgraph "Client"
+    subgraph Client["Client"]
         Browser["브라우저<br/>(React)"]
     end
     
-    subgraph "Frontend"
-        Frontend["Frontend<br/>(Vite + React)"]
+    subgraph FrontendLayer["Frontend"]
+        ReactApp["React App<br/>(Vite + React)"]
     end
     
-    subgraph "Backend"
+    subgraph Backend["Backend"]
         API["Spring Boot API<br/>(REST)"]
         Security["Spring Security<br/>+ JWT"]
         Service["Service Layer"]
         Repository["JPA Repository"]
     end
     
-    subgraph "Database"
+    subgraph Database["Database"]
         MySQL[("MySQL<br/>(플랜/게시글/회원)")]
     end
     
-    subgraph "External"
+    subgraph External["External"]
         KakaoLocal["Kakao Local API<br/>(장소 검색)"]
         KakaoMobility["Kakao Mobility API<br/>(경로 조회)"]
     end
     
-    Browser -->|HTTPS| Frontend
-    Frontend -->|REST API| API
+    Browser -->|HTTPS| ReactApp
+    ReactApp -->|REST API| API
     API --> Security
     Security --> Service
     Service --> Repository
