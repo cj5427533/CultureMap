@@ -27,27 +27,29 @@ export const Header = ({ onLogout }: HeaderProps) => {
           </Link>
           
           {/* 일관성: 네비게이션 메뉴 - 모바일 최적화 */}
-          <nav className="flex items-center space-x-2 md:space-x-4 lg:space-x-6">
+          <nav className="flex items-center space-x-1 md:space-x-2 lg:space-x-4 xl:space-x-6">
             {isAuthenticated ? (
               <>
                 <Link 
                   to="/plans" 
-                  className="text-gray-700 hover:text-green-600 font-semibold text-sm md:text-base transition-colors duration-200 relative group px-2 md:px-3 py-1.5 md:py-2 rounded-md hover:bg-green-50 touch-target"
+                  className="text-gray-700 hover:text-green-600 font-semibold text-xs md:text-sm lg:text-base transition-colors duration-200 relative group px-2 md:px-3 py-2 md:py-1.5 rounded-md hover:bg-green-50 touch-target min-h-[44px] md:min-h-0 flex items-center"
                 >
-                  내 플랜
+                  <span className="hidden sm:inline">내 플랜</span>
+                  <span className="sm:hidden">플랜</span>
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-600 transition-all duration-200 group-hover:w-full"></span>
                 </Link>
                 <Link 
                   to="/posts" 
-                  className="text-gray-700 hover:text-green-600 font-semibold text-sm md:text-base transition-colors duration-200 relative group px-2 md:px-3 py-1.5 md:py-2 rounded-md hover:bg-green-50 touch-target"
+                  className="text-gray-700 hover:text-green-600 font-semibold text-xs md:text-sm lg:text-base transition-colors duration-200 relative group px-2 md:px-3 py-2 md:py-1.5 rounded-md hover:bg-green-50 touch-target min-h-[44px] md:min-h-0 flex items-center"
                 >
-                  공유 게시판
+                  <span className="hidden sm:inline">공유 게시판</span>
+                  <span className="sm:hidden">게시판</span>
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-600 transition-all duration-200 group-hover:w-full"></span>
                 </Link>
                 {user && user.role === 'ADMIN' && (
                   <Link 
                     to="/admin" 
-                    className="text-gray-700 hover:text-red-600 font-semibold text-sm md:text-base transition-colors duration-200 relative group px-2 md:px-3 py-1.5 md:py-2 rounded-md hover:bg-red-50 touch-target"
+                    className="text-gray-700 hover:text-red-600 font-semibold text-xs md:text-sm lg:text-base transition-colors duration-200 relative group px-2 md:px-3 py-2 md:py-1.5 rounded-md hover:bg-red-50 touch-target min-h-[44px] md:min-h-0 flex items-center"
                   >
                     관리자
                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-600 transition-all duration-200 group-hover:w-full"></span>
@@ -55,13 +57,14 @@ export const Header = ({ onLogout }: HeaderProps) => {
                 )}
                 {/* 대비: 사용자 닉네임 표시 */}
                 {user && (
-                  <span className="text-gray-800 text-xs md:text-sm font-semibold px-2 md:px-3 py-1.5 md:py-2 bg-green-50 rounded-full border-2 border-green-200 hidden sm:inline-block">
+                  <span className="text-gray-800 text-xs md:text-sm font-semibold px-2 md:px-3 py-1.5 md:py-2 bg-green-50 rounded-full border-2 border-green-200 hidden md:inline-block">
                     {user.nickname}님
                   </span>
                 )}
                 {onLogout && (
-                  <Button variant="secondary" onClick={onLogout} className="text-xs md:text-sm px-3 md:px-4">
-                    로그아웃
+                  <Button variant="secondary" onClick={onLogout} className="text-xs md:text-sm px-2 md:px-3 lg:px-4 touch-target min-h-[44px] md:min-h-0">
+                    <span className="hidden sm:inline">로그아웃</span>
+                    <span className="sm:hidden">로그아웃</span>
                   </Button>
                 )}
               </>
@@ -77,9 +80,9 @@ export const Header = ({ onLogout }: HeaderProps) => {
                     회원가입
                   </Button>
                 </Link>
-                {/* 모바일: 햄버거 메뉴 대신 아이콘 또는 간단한 버튼 */}
+                {/* 모바일: 간단한 버튼 */}
                 <Link to="/login" className="sm:hidden">
-                  <Button variant="primary" className="text-xs px-3">
+                  <Button variant="primary" className="text-xs px-3 touch-target min-h-[44px]">
                     로그인
                   </Button>
                 </Link>

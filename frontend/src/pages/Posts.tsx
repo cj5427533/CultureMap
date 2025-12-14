@@ -277,7 +277,7 @@ export const Posts = () => {
           onClick={handleCloseModal}
         >
           <div 
-            className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-green-200"
+            className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 max-w-2xl w-full mx-2 md:mx-4 max-h-[90vh] md:max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-green-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-green-200">

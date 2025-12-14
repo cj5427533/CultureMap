@@ -261,15 +261,15 @@ export const PostDetail = () => {
             </div>
             {/* 정렬: 액션 버튼 - 모바일 최적화 */}
             <div className="flex flex-wrap gap-2 md:gap-3">
-              <Button variant="success" onClick={handleCopyShareLink} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm">
+              <Button variant="success" onClick={handleCopyShareLink} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm touch-target min-h-[44px] md:min-h-0">
                 🔗 공유하기
               </Button>
               {canEdit && (
                 <>
-                  <Button variant="warning" onClick={handleOpenEditModal} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm">
+                  <Button variant="warning" onClick={handleOpenEditModal} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm touch-target min-h-[44px] md:min-h-0">
                     ✏️ 수정
                   </Button>
-                  <Button variant="danger" onClick={handleDelete} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm">
+                  <Button variant="danger" onClick={handleDelete} className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all text-xs md:text-sm touch-target min-h-[44px] md:min-h-0">
                     🗑️ 삭제
                   </Button>
                 </>
@@ -386,7 +386,7 @@ export const PostDetail = () => {
               </h2>
             </div>
             <div className="rounded-xl overflow-hidden border-2 border-green-200 shadow-lg">
-              <KakaoMap places={post.plan.places} height="500px" />
+              <KakaoMap places={post.plan.places} height="400px" />
             </div>
           </Card>
         )}
@@ -505,7 +505,7 @@ export const PostDetail = () => {
                       <Button
                         variant="danger"
                         onClick={() => handleDeleteComment(comment.id)}
-                        className="text-xs py-1 px-2"
+                        className="text-xs py-2 px-3 touch-target min-h-[44px]"
                       >
                         삭제
                       </Button>
@@ -526,7 +526,7 @@ export const PostDetail = () => {
           onClick={handleCloseEditModal}
         >
           <div 
-            className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-green-200"
+            className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 max-w-2xl w-full mx-2 md:mx-4 max-h-[90vh] md:max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-green-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-green-200">

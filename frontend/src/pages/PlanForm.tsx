@@ -97,29 +97,87 @@ export const PlanForm = () => {
   // 카카오 장소를 Place로 변환하여 추가
   const handleAddKakaoPlace = async (kakaoPlace: KakaoPlace) => {
     try {
-      // 카카오 장소를 DB에 저장
-      const savedPlace = await placeService.createPlace({
-        name: kakaoPlace.place_name,
-        address: kakaoPlace.road_address_name || kakaoPlace.address_name,
-        category: kakaoPlace.category_name,
-        latitude: Number(kakaoPlace.y),
-        longitude: Number(kakaoPlace.x),
-        externalId: kakaoPlace.id,
-      });
+      let savedPlace: Place;
+      
+      try {
+        // 카카오 장소를 DB에 저장 시도
+        savedPlace = await placeService.createPlace({
+          name: kakaoPlace.place_name,
+          address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+          category: kakaoPlace.category_name,
+          latitude: Number(kakaoPlace.y),
+          longitude: Number(kakaoPlace.x),
+          externalId: kakaoPlace.id,
+        });
+      } catch (createErr) {
+        // 이미 존재하는 장소인 경우, externalId로 검색해서 가져오기 시도
+        console.log('장소 생성 실패, 검색 시도:', createErr);
+        
+        // externalId로 장소 검색
+        const searchResults = await placeService.searchPlaces();
+        const existingPlace = searchResults.find(p => 
+          p.name === kakaoPlace.place_name || 
+          (kakaoPlace.id && p.id === parseInt(kakaoPlace.id))
+        );
+        
+        if (existingPlace) {
+          savedPlace = existingPlace;
+        } else {
+          // 검색 결과가 없으면 Place 객체로 직접 생성 (임시 ID 사용)
+          savedPlace = {
+            id: parseInt(kakaoPlace.id) || Date.now(),
+            name: kakaoPlace.place_name,
+            address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+            category: kakaoPlace.category_name,
+            latitude: Number(kakaoPlace.y),
+            longitude: Number(kakaoPlace.x),
+          };
+        }
+      }
 
       // 이미 추가되어 있지 않으면 추가
-      if (!selectedPlaces.find(p => p.id === savedPlace.id)) {
+      const isAlreadyAdded = selectedPlaces.find(p => 
+        p.id === savedPlace.id || 
+        (p.name === savedPlace.name && p.address === savedPlace.address)
+      );
+      
+      if (!isAlreadyAdded) {
         setSelectedPlaces([...selectedPlaces, savedPlace]);
         setFormData({ 
           ...formData, 
           placeIds: [...formData.placeIds, savedPlace.id],
           visitTimes: { ...formData.visitTimes }
         });
-        alert('장소가 추가되었습니다!');
+        alert('플랜에 장소가 추가되었습니다!');
+      } else {
+        alert('이미 추가된 장소입니다.');
       }
     } catch (err) {
       console.error('장소 추가 실패:', err);
-      alert('장소를 추가하는데 실패했습니다.');
+      // 에러가 발생해도 장소 정보를 직접 추가
+      const placeToAdd: Place = {
+        id: parseInt(kakaoPlace.id) || Date.now(),
+        name: kakaoPlace.place_name,
+        address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+        category: kakaoPlace.category_name,
+        latitude: Number(kakaoPlace.y),
+        longitude: Number(kakaoPlace.x),
+      };
+      
+      const isAlreadyAdded = selectedPlaces.find(p => 
+        p.id === placeToAdd.id || 
+        (p.name === placeToAdd.name && p.address === placeToAdd.address)
+      );
+      
+      if (!isAlreadyAdded) {
+        setSelectedPlaces([...selectedPlaces, placeToAdd]);
+        setFormData({ 
+          ...formData, 
+          placeIds: [...formData.placeIds, placeToAdd.id],
+          visitTimes: { ...formData.visitTimes }
+        });
+        alert('플랜에 장소가 추가되었습니다!');
+      }
     }
   };
 
@@ -520,7 +578,7 @@ export const PlanForm = () => {
                   <button
                     key={suggestion}
                     onClick={() => setFormData({ ...formData, title: suggestion })}
-                    className="px-3 md:px-4 py-1.5 md:py-2 text-sm md:text-base bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors font-semibold border border-green-200"
+                    className="px-3 md:px-4 py-2 md:py-1.5 text-sm md:text-base bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors font-semibold border border-green-200 touch-target min-h-[44px] md:min-h-0"
                   >
                     {suggestion}
                   </button>
@@ -607,7 +665,7 @@ export const PlanForm = () => {
                   <div
                     ref={mapRef}
                     className="w-full rounded-lg overflow-hidden bg-gray-100"
-                    style={{ height: '300px', minHeight: '300px' }}
+                    style={{ height: '250px', minHeight: '250px' }}
                   >
                     {mapError && !mapInstanceRef.current && (
                       <div className="flex items-center justify-center h-full">
@@ -686,7 +744,7 @@ export const PlanForm = () => {
                             variant="secondary"
                             onClick={() => handleMoveUp(index)}
                             disabled={index === 0}
-                            className="text-xs md:text-sm px-2 md:px-3"
+                            className="text-xs md:text-sm px-3 md:px-2 py-2 md:py-1 touch-target min-h-[44px] md:min-h-0"
                           >
                             ↑
                           </Button>
@@ -695,7 +753,7 @@ export const PlanForm = () => {
                             variant="secondary"
                             onClick={() => handleMoveDown(index)}
                             disabled={index === selectedPlaces.length - 1}
-                            className="text-xs md:text-sm px-2 md:px-3"
+                            className="text-xs md:text-sm px-3 md:px-2 py-2 md:py-1 touch-target min-h-[44px] md:min-h-0"
                           >
                             ↓
                           </Button>
@@ -703,7 +761,7 @@ export const PlanForm = () => {
                             type="button"
                             variant="danger"
                             onClick={() => handleRemovePlace(place.id)}
-                            className="text-xs md:text-sm"
+                            className="text-xs md:text-sm px-3 md:px-2 py-2 md:py-1 touch-target min-h-[44px] md:min-h-0"
                           >
                             삭제
                           </Button>

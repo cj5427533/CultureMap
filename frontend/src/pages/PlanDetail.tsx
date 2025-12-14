@@ -447,11 +447,11 @@ export const PlanDetail = () => {
 
             {/* 지도 & 경로 */}
             {plan.places.length > 0 && plan.places.some(p => p.latitude && p.longitude) && (
-              <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
+              <div className="mt-8 bg-white rounded-lg border border-gray-200 p-4 md:p-6">
                 <div className="mb-4">
-                  <h2 className="text-xl font-bold">지도</h2>
+                  <h2 className="text-lg md:text-xl font-bold">지도</h2>
                 </div>
-                <KakaoMap places={plan.places} height="500px" routePath={routePath} />
+                <KakaoMap places={plan.places} height="400px" routePath={routePath} />
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <span className="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-semibold">자동차</span>
@@ -497,7 +497,7 @@ export const PlanDetail = () => {
           onClick={() => setShowInviteModal(false)}
         >
           <div 
-            className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border-2 border-green-200"
+            className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 max-w-md w-full mx-2 md:mx-4 max-h-[90vh] md:max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-green-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-green-200">

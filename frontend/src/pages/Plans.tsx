@@ -161,18 +161,18 @@ export const Plans = () => {
                   </div>
                 </div>
                 {/* 일관성: 액션 버튼 - 가로 텍스트로 컴팩트하게 */}
-                <div className="flex gap-1.5 flex-wrap pt-4 md:pt-5 border-t-2 border-green-200">
-                  <Link to={`/plans/${plan.id}`}>
-                    <Button variant="primary" className="px-2.5 py-1 text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap">
+                <div className="flex gap-2 md:gap-1.5 flex-wrap pt-4 md:pt-5 border-t-2 border-green-200">
+                  <Link to={`/plans/${plan.id}`} className="flex-1 sm:flex-none">
+                    <Button variant="primary" className="w-full sm:w-auto px-3 md:px-2.5 py-2 md:py-1 text-xs md:text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap touch-target">
                       👁️ 보기
                     </Button>
                   </Link>
-                  <Link to={`/plans/${plan.id}/edit`}>
-                    <Button variant="warning" className="px-2.5 py-1 text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap">
+                  <Link to={`/plans/${plan.id}/edit`} className="flex-1 sm:flex-none">
+                    <Button variant="warning" className="w-full sm:w-auto px-3 md:px-2.5 py-2 md:py-1 text-xs md:text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap touch-target">
                       ✏️ 수정
                     </Button>
                   </Link>
-                  <Button variant="danger" onClick={() => handleDelete(plan.id)} className="px-2.5 py-1 text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap">
+                  <Button variant="danger" onClick={() => handleDelete(plan.id)} className="flex-1 sm:flex-none w-full sm:w-auto px-3 md:px-2.5 py-2 md:py-1 text-xs md:text-xs shadow-md hover:shadow-lg transform hover:scale-105 transition-all whitespace-nowrap touch-target">
                     🗑️ 삭제
                   </Button>
                 </div>

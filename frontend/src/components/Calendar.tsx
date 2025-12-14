@@ -53,8 +53,8 @@ export const Calendar = ({ selectedDate, onDateSelect, markedDates = [] }: Calen
   }, [selectedDate]);
 
   return (
-    <div style={{ marginBottom: '20px' }}>
-      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+    <div className="mb-4 md:mb-6">
+      <label className="block mb-2 md:mb-3 font-semibold text-sm md:text-base text-gray-800">
         날짜 선택
       </label>
       <input
@@ -62,15 +62,8 @@ export const Calendar = ({ selectedDate, onDateSelect, markedDates = [] }: Calen
         type="text"
         placeholder="날짜를 선택하세요"
         readOnly
-        style={{
-          width: '100%',
-          maxWidth: '300px',
-          padding: '10px',
-          border: '1px solid #ddd',
-          borderRadius: '5px',
-          fontSize: '14px',
-          cursor: 'pointer',
-        }}
+        className="w-full max-w-full md:max-w-md px-4 md:px-5 py-2.5 md:py-3 border-2 border-gray-300 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-base md:text-lg cursor-pointer bg-white touch-target"
+        style={{ fontSize: '16px' }} // iOS 줌 방지
       />
     </div>
   );

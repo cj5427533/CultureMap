@@ -877,7 +877,7 @@ export const HomeMap = () => {
         <div
           ref={mapRef}
           className="w-full rounded-lg overflow-hidden bg-gray-100"
-          style={{ height: '500px', minHeight: '500px' }}
+          style={{ height: '400px', minHeight: '400px' }}
         >
         {error && !mapInstanceRef.current && (
           <div className="flex items-center justify-center h-full">
@@ -974,7 +974,7 @@ export const HomeMap = () => {
       {/* 플랜에 추가 모달 - 단계별 플로우 */}
       {showPlanModal && selectedPlace && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCancelCreate}>
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-xl p-4 md:p-6 max-w-md w-full mx-2 md:mx-4 max-h-[90vh] md:max-h-[80vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {/* 장소 정보 */}
             <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
               <div className="font-semibold text-base text-gray-900">{selectedPlace.place_name}</div>
@@ -1113,7 +1113,7 @@ export const HomeMap = () => {
                           <button
                             key={suggestion}
                             onClick={() => setPlanTitle(suggestion)}
-                            className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
+                            className="px-3 py-2 text-sm bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors touch-target min-h-[44px]"
                           >
                             {suggestion}
                           </button>
@@ -1202,7 +1202,7 @@ export const HomeMap = () => {
       {/* 로그인 필요 안내 모달 */}
       {showLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowLoginModal(false)}>
-          <div className="max-w-md w-full mx-4 border-2 border-green-200 bg-white shadow-2xl rounded-xl" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+          <div className="max-w-md w-full mx-2 md:mx-4 border-2 border-green-200 bg-white shadow-2xl rounded-xl" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="text-center py-8 md:py-10 px-6 md:px-8">
               <div className="text-6xl md:text-7xl mb-6">🔒</div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6">
