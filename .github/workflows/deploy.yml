@@ -86,16 +86,16 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           version: latest
-          token: ${{ secrets.FLY_API_TOKEN }}
+          token: ${{ secrets.FLY_API_TOKEN_BACKEND }}
 
       - name: Verify Fly.io token
         run: |
           if [ -z "$FLY_API_TOKEN" ]; then
-            echo "ERROR: FLY_API_TOKEN is not set in GitHub Secrets!"
-            echo "Please add FLY_API_TOKEN to Repository Secrets:"
+            echo "ERROR: FLY_API_TOKEN_BACKEND is not set in GitHub Secrets!"
+            echo "Please add FLY_API_TOKEN_BACKEND to Repository Secrets:"
             echo "1. Go to Settings > Secrets and variables > Actions"
             echo "2. Click 'New repository secret'"
-            echo "3. Name: FLY_API_TOKEN"
+            echo "3. Name: FLY_API_TOKEN_BACKEND"
             echo "4. Value: (generate with: fly tokens create deploy --app culturemap-api)"
             exit 1
           fi
@@ -103,11 +103,11 @@ jobs:
           echo "First 10 chars: ${FLY_API_TOKEN:0:10}..."
           echo "Token format looks valid (deploy tokens may not support 'whoami' command)"
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_BACKEND }}
 
       - name: Deploy to Fly.io
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_BACKEND }}
         run: flyctl deploy --app culturemap-api
 
   deploy-frontend:
@@ -124,16 +124,16 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           version: latest
-          token: ${{ secrets.FLY_API_TOKEN }}
+          token: ${{ secrets.FLY_API_TOKEN_FRONTEND }}
 
       - name: Verify Fly.io token
         run: |
           if [ -z "$FLY_API_TOKEN" ]; then
-            echo "ERROR: FLY_API_TOKEN is not set in GitHub Secrets!"
-            echo "Please add FLY_API_TOKEN to Repository Secrets:"
+            echo "ERROR: FLY_API_TOKEN_FRONTEND is not set in GitHub Secrets!"
+            echo "Please add FLY_API_TOKEN_FRONTEND to Repository Secrets:"
             echo "1. Go to Settings > Secrets and variables > Actions"
             echo "2. Click 'New repository secret'"
-            echo "3. Name: FLY_API_TOKEN"
+            echo "3. Name: FLY_API_TOKEN_FRONTEND"
             echo "4. Value: (generate with: fly tokens create deploy --app culturemap)"
             exit 1
           fi
@@ -141,10 +141,10 @@ jobs:
           echo "First 10 chars: ${FLY_API_TOKEN:0:10}..."
           echo "Token format looks valid (deploy tokens may not support 'whoami' command)"
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_FRONTEND }}
 
       - name: Deploy to Fly.io
         working-directory: ./frontend
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_FRONTEND }}
         run: flyctl deploy --app culturemap --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api --build-arg VITE_KAKAO_MAP_API_KEY=${{ secrets.VITE_KAKAO_MAP_API_KEY }}
