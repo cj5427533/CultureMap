@@ -323,11 +323,17 @@ const MyHistorySection = () => {
                     }}
                   >
                     <img
-                      src={history.imageUrl.startsWith('http') ? history.imageUrl : history.imageUrl}
+                      src={history.imageUrl.startsWith('http') 
+                        ? history.imageUrl 
+                        : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://culturemap-api.fly.dev'}${history.imageUrl}`}
                       alt={`History ${history.displayOrder}`}
                       className="w-full h-80 object-contain bg-gray-100"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
+                        // placeholder 대신 빈 이미지 또는 기본 이미지 사용
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = 'none';
+                        // 또는 기본 이미지로 대체
+                        // img.src = '/default-history-image.png';
                       }}
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
@@ -386,11 +392,14 @@ const MyHistorySection = () => {
                     }}
                   >
                     <img
-                      src={history.imageUrl.startsWith('http') ? history.imageUrl : history.imageUrl}
+                      src={history.imageUrl.startsWith('http') 
+                        ? history.imageUrl 
+                        : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://culturemap-api.fly.dev'}${history.imageUrl}`}
                       alt={`History ${history.displayOrder}`}
                       className="w-full h-64 object-contain bg-gray-100"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = 'none';
                       }}
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
@@ -496,11 +505,14 @@ const HistoryModal = ({ histories, onClose }: { histories: History[]; onClose: (
                 className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105"
               >
                 <img
-                  src={history.imageUrl.startsWith('http') ? history.imageUrl : history.imageUrl}
+                  src={history.imageUrl.startsWith('http') 
+                    ? history.imageUrl 
+                    : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://culturemap-api.fly.dev'}${history.imageUrl}`}
                   alt={`History ${history.displayOrder}`}
                   className="w-full h-64 object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = 'none';
                   }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
