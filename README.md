@@ -88,8 +88,8 @@
 ### 인프라 및 배포
 - **컨테이너화**: Docker + Docker Compose
 - **CI/CD**: 
-  - GitHub Actions (자동 빌드 및 Fly.io 배포)
-  - Jenkins (Docker 빌드 및 배포 파이프라인)
+  - GitHub Actions (자동 빌드 및 Fly.io 배포) - **사용 중**
+  - Jenkins (Docker 빌드 및 배포 파이프라인) - **참고용**
 - **클라우드 배포**: Fly.io (백엔드/프론트엔드)
 - **데이터베이스**: 
   - 개발: MySQL (Docker Compose)
@@ -381,7 +381,9 @@ docker build -t culturemap-frontend-dev -f Dockerfile.dev .
 - `FLY_API_TOKEN_FRONTEND`: Fly.io 프론트엔드 앱 배포 토큰
 - `VITE_KAKAO_MAP_API_KEY`: 카카오 맵 JavaScript API 키
 
-### Jenkins
+### Jenkins (참고용)
+
+> **참고**: 현재 프로젝트는 GitHub Actions를 사용하고 있습니다. Jenkins는 로컬/내부 환경용 대안으로 제공됩니다.
 
 Jenkins를 사용한 Docker 기반 빌드 및 배포 파이프라인도 지원합니다.
 
