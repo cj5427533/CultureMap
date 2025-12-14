@@ -12,6 +12,9 @@
 - [프로젝트 구조](#프로젝트-구조)
 - [시작하기](#시작하기)
 - [환경 설정](#환경-설정)
+- [Docker를 사용한 실행](#docker를-사용한-실행)
+- [CI/CD 파이프라인](#cicd-파이프라인)
+- [배포](#배포)
 - [API 엔드포인트](#api-엔드포인트)
 - [데이터 출처](#데이터-출처)
 
@@ -81,10 +84,16 @@
   - 검색 디바운스 (500ms)
   - 글로벌 로딩 상태 표시
   - Error Boundary를 통한 에러 처리
-- **UX 최적화**:
-  - 검색 디바운스 (500ms)
-  - 글로벌 로딩 상태 표시
-  - Error Boundary를 통한 에러 처리
+
+### 인프라 및 배포
+- **컨테이너화**: Docker + Docker Compose
+- **CI/CD**: 
+  - GitHub Actions (자동 빌드 및 Fly.io 배포)
+  - Jenkins (Docker 빌드 및 배포 파이프라인)
+- **클라우드 배포**: Fly.io (백엔드/프론트엔드)
+- **데이터베이스**: 
+  - 개발: MySQL (Docker Compose)
+  - 운영: MySQL (Aiven 또는 Fly.io 환경변수 설정)
 
 ---
 
@@ -92,26 +101,45 @@
 
 ```
 culturemap/
-├── src/main/java/com/culturemap/    # 백엔드 소스 코드
-│   ├── config/                      # 설정 클래스 (Security, Swagger 등)
-│   ├── controller/                  # REST API 컨트롤러
-│   ├── domain/                       # JPA 엔티티 (Member, Plan, Place 등)
-│   ├── dto/                         # 데이터 전송 객체
-│   ├── exception/                   # 예외 처리
-│   ├── repository/                  # JPA 리포지토리
-│   ├── security/                     # JWT 인증 관련
-│   └── service/                      # 비즈니스 로직
+├── .github/
+│   └── workflows/
+│       └── deploy.yml              # GitHub Actions CI/CD 파이프라인
+├── ci/
+│   └── Jenkinsfile                 # Jenkins 파이프라인 설정
+├── docker/
+│   ├── Dockerfile                  # 백엔드 프로덕션 Dockerfile
+│   ├── Dockerfile.dev              # 백엔드 개발용 Dockerfile
+│   ├── docker-compose.yml          # 프로덕션 Docker Compose 설정
+│   └── docker-compose.dev.yml      # 개발용 Docker Compose 설정
+├── database/
+│   └── init.sql                    # MySQL 초기화 스크립트
+├── src/main/java/com/culturemap/   # 백엔드 소스 코드
+│   ├── config/                     # 설정 클래스 (Security, Swagger 등)
+│   ├── controller/                 # REST API 컨트롤러
+│   ├── domain/                     # JPA 엔티티 (Member, Plan, Place 등)
+│   ├── dto/                        # 데이터 전송 객체
+│   ├── exception/                  # 예외 처리
+│   ├── repository/                 # JPA 리포지토리
+│   ├── security/                   # JWT 인증 관련
+│   └── service/                    # 비즈니스 로직
 ├── src/main/resources/
-│   └── application.properties       # 애플리케이션 설정
-└── frontend/                        # React 프론트엔드
+│   ├── application.properties      # 기본 애플리케이션 설정
+│   ├── application-dev.properties  # 개발 환경 설정
+│   └── application-prod.properties # 프로덕션 환경 설정
+├── Dockerfile                      # 루트 Dockerfile (Fly.io 배포용)
+├── fly.toml                        # Fly.io 백엔드 앱 설정
+└── frontend/                       # React 프론트엔드
     ├── src/
-    │   ├── components/              # React 컴포넌트
-    │   ├── pages/                   # 페이지 컴포넌트
-    │   ├── services/                # API 서비스
-    │   ├── hooks/                   # 커스텀 훅
-    │   ├── types/                   # TypeScript 타입 정의
-    │   └── utils/                   # 유틸리티 함수
-    └── public/                      # 정적 파일
+    │   ├── components/             # React 컴포넌트
+    │   ├── pages/                  # 페이지 컴포넌트
+    │   ├── services/               # API 서비스
+    │   ├── hooks/                  # 커스텀 훅
+    │   ├── types/                  # TypeScript 타입 정의
+    │   └── utils/                  # 유틸리티 함수
+    ├── Dockerfile                  # 프론트엔드 프로덕션 Dockerfile
+    ├── Dockerfile.dev              # 프론트엔드 개발용 Dockerfile
+    ├── fly.toml                    # Fly.io 프론트엔드 앱 설정
+    └── public/                     # 정적 파일
 ```
 
 ### 도메인 모델
@@ -177,40 +205,279 @@ Swagger UI를 통해 API 문서를 확인할 수 있습니다:
 
 ## ⚙️ 환경 설정
 
-### 백엔드 설정 (`application.properties`)
+### 프로파일별 설정
 
-```properties
-# 데이터베이스 (H2 - 개발용)
-spring.datasource.url=jdbc:h2:mem:testdb
-spring.datasource.username=sa
-spring.datasource.password=
+프로젝트는 Spring Boot 프로파일을 사용하여 환경별 설정을 관리합니다:
+
+- **개발 환경** (`dev`): `application-dev.properties`
+  - 로컬 MySQL (포트 3308)
+  - SQL 로그 출력
+  - 개발용 기본값 사용
+
+- **프로덕션 환경** (`prod`): `application-prod.properties`
+  - 환경변수 기반 설정 (DB_URL, JWT_SECRET 등)
+  - SQL 로그 비활성화
+  - 운영 도메인 CORS 설정
+
+### 백엔드 환경 변수
+
+프로덕션 환경에서는 다음 환경 변수를 설정해야 합니다:
+
+```bash
+# 데이터베이스 (Aiven 또는 외부 MySQL)
+DB_URL=jdbc:mysql://your-db-host:3306/culturemap?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+DB_USERNAME=your-username
+DB_PASSWORD=your-password
 
 # JWT 설정
-jwt.secret=your-secret-key-here
-jwt.expiration=86400000  # 24시간 (Access Token)
-jwt.refresh-expiration=604800000  # 7일 (Refresh Token)
+JWT_SECRET=your-secret-key-here
+JWT_EXPIRATION=86400000  # 24시간 (Access Token)
+JWT_REFRESH_EXPIRATION=604800000  # 7일 (Refresh Token)
 
 # CORS 설정
-cors.allowed-origins=http://localhost:3000,http://localhost:5173
+CORS_ALLOWED_ORIGINS=https://culturemap.fly.dev,https://culturemap-api.fly.dev
 
 # Kakao API 키
-kakao.rest-api-key=your-kakao-rest-api-key
-kakao.mobility.url=https://apis-navi.kakaomobility.com/v1/directions
+KAKAO_REST_API_KEY=your-kakao-rest-api-key
 ```
 
-### 프론트엔드 설정
+### 프론트엔드 환경 변수
 
-프론트엔드는 `src/utils/api.ts`에서 API 기본 URL을 설정합니다:
-```typescript
-const API_BASE_URL = 'http://localhost:8080/api';
+프론트엔드는 빌드 타임에 환경 변수를 주입합니다:
+
+```bash
+# .env.production 또는 빌드 시 --build-arg로 전달
+VITE_API_BASE_URL=https://culturemap-api.fly.dev/api
+VITE_KAKAO_MAP_API_KEY=your-kakao-javascript-key
 ```
 
 ### Kakao API 키 발급
 
 1. [Kakao Developers](https://developers.kakao.com/)에 접속
 2. 애플리케이션 생성
-3. REST API 키 발급
-4. `application.properties`에 `kakao.rest-api-key` 설정
+3. **REST API 키** 발급 (백엔드용)
+4. **JavaScript 키** 발급 (프론트엔드용)
+5. 환경 변수에 각각 설정
+
+---
+
+## 🐳 Docker를 사용한 실행
+
+### 사전 요구사항
+
+- Docker 및 Docker Compose 설치
+- `.env` 파일 생성 (프로젝트 루트)
+
+### Docker Compose로 전체 실행
+
+#### 프로덕션 모드
+
+```bash
+# 프로젝트 루트에서
+docker-compose -f docker/docker-compose.yml up -d --build
+```
+
+이 명령어는 다음을 실행합니다:
+- MySQL 8.0 컨테이너 (포트 3306)
+- 백엔드 Spring Boot 애플리케이션 (포트 8080)
+- 프론트엔드 React 애플리케이션 (포트 5173)
+
+#### 개발 모드 (Hot Reload)
+
+```bash
+# 개발 모드로 실행 (소스 코드 변경 시 자동 반영)
+docker-compose -f docker/docker-compose.dev.yml up -d --build
+```
+
+### Docker Compose 명령어
+
+```bash
+# 서비스 중지 (컨테이너 유지)
+docker-compose -f docker/docker-compose.yml stop
+
+# 서비스 중지 및 컨테이너 제거 (볼륨 유지)
+docker-compose -f docker/docker-compose.yml down
+
+# 모든 것 제거 (볼륨 포함 - 데이터 삭제!)
+docker-compose -f docker/docker-compose.yml down -v
+
+# 로그 확인
+docker-compose -f docker/docker-compose.yml logs -f
+
+# 특정 서비스 로그
+docker-compose -f docker/docker-compose.yml logs -f backend
+docker-compose -f docker/docker-compose.yml logs -f frontend
+docker-compose -f docker/docker-compose.yml logs -f mysql
+
+# 컨테이너 상태 확인
+docker-compose -f docker/docker-compose.yml ps
+```
+
+### 개별 Docker 이미지 빌드
+
+#### 백엔드 이미지 빌드
+
+```bash
+# 프로덕션 이미지
+docker build -t culturemap-backend -f docker/Dockerfile .
+
+# 개발 이미지
+docker build -t culturemap-backend-dev -f docker/Dockerfile.dev .
+```
+
+#### 프론트엔드 이미지 빌드
+
+```bash
+cd frontend
+
+# 프로덕션 이미지 (환경 변수 포함)
+docker build -t culturemap-frontend \
+  --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api \
+  --build-arg VITE_KAKAO_MAP_API_KEY=your-key \
+  -f Dockerfile .
+
+# 개발 이미지
+docker build -t culturemap-frontend-dev -f Dockerfile.dev .
+```
+
+---
+
+## 🔄 CI/CD 파이프라인
+
+### GitHub Actions
+
+프로젝트는 GitHub Actions를 사용하여 자동 빌드 및 배포를 수행합니다.
+
+#### 워크플로우 위치
+- `.github/workflows/deploy.yml`
+
+#### 주요 작업
+
+1. **백엔드 빌드 & 테스트**
+   - JDK 17 설정
+   - Gradle 빌드 및 테스트 실행
+   - 빌드 캐시 최적화
+
+2. **프론트엔드 빌드 & 테스트**
+   - Node.js 18 설정
+   - 의존성 설치 및 린트 검사
+   - 프로덕션 빌드
+
+3. **Fly.io 배포**
+   - 백엔드 배포 (`culturemap-api`)
+   - 프론트엔드 배포 (`culturemap`)
+   - `main` 브랜치 푸시 시에만 실행
+
+#### 필요한 GitHub Secrets
+
+- `FLY_API_TOKEN_BACKEND`: Fly.io 백엔드 앱 배포 토큰
+- `FLY_API_TOKEN_FRONTEND`: Fly.io 프론트엔드 앱 배포 토큰
+- `VITE_KAKAO_MAP_API_KEY`: 카카오 맵 JavaScript API 키
+
+### Jenkins
+
+Jenkins를 사용한 Docker 기반 빌드 및 배포 파이프라인도 지원합니다.
+
+#### Jenkinsfile 위치
+- `ci/Jenkinsfile`
+
+#### 주요 단계
+
+1. **코드 체크아웃**
+2. **백엔드 빌드**: Gradle을 사용한 Spring Boot 빌드
+3. **프론트엔드 빌드**: npm을 사용한 React 빌드
+4. **Docker 이미지 빌드**: 백엔드 및 프론트엔드 이미지 생성
+5. **Docker 이미지 푸시**: Docker Registry에 푸시 (설정된 경우)
+6. **배포**: Docker Compose를 사용한 배포
+7. **정리**: 오래된 이미지 제거
+
+#### Jenkins 환경 변수
+
+- `DOCKER_REGISTRY`: Docker Registry 주소 (선택사항)
+- `VITE_API_BASE_URL`: 프론트엔드 API 기본 URL
+
+---
+
+## 🚀 배포
+
+### Fly.io 배포
+
+프로젝트는 Fly.io를 사용하여 클라우드에 배포됩니다.
+
+#### 배포된 앱
+
+- **백엔드**: `culturemap-api` (https://culturemap-api.fly.dev)
+- **프론트엔드**: `culturemap` (https://culturemap.fly.dev)
+
+#### Fly.io 설정 파일
+
+- **백엔드**: `fly.toml` (프로젝트 루트)
+- **프론트엔드**: `frontend/fly.toml`
+
+#### 배포 방법
+
+##### 수동 배포
+
+```bash
+# Fly.io CLI 설치 후
+flyctl auth login
+
+# 백엔드 배포
+flyctl deploy --app culturemap-api
+
+# 프론트엔드 배포
+cd frontend
+flyctl deploy --app culturemap \
+  --build-arg VITE_API_BASE_URL=https://culturemap-api.fly.dev/api \
+  --build-arg VITE_KAKAO_MAP_API_KEY=your-key
+```
+
+##### 자동 배포 (GitHub Actions)
+
+`main` 브랜치에 푸시하면 자동으로 배포됩니다.
+
+#### Fly.io 환경 변수 설정
+
+```bash
+# 백엔드 환경 변수
+flyctl secrets set -a culturemap-api \
+  DB_URL="jdbc:mysql://..." \
+  DB_USERNAME="..." \
+  DB_PASSWORD="..." \
+  JWT_SECRET="..." \
+  KAKAO_REST_API_KEY="..." \
+  CORS_ALLOWED_ORIGINS="https://culturemap.fly.dev,https://culturemap-api.fly.dev"
+
+# 프론트엔드 환경 변수 (빌드 시 주입)
+# GitHub Secrets에 설정하거나 배포 시 --build-arg로 전달
+```
+
+### 데이터베이스 (Aiven)
+
+프로덕션 환경에서는 Aiven 또는 다른 클라우드 MySQL 서비스를 사용할 수 있습니다.
+
+#### Aiven 설정
+
+1. Aiven에서 MySQL 서비스 생성
+2. 연결 정보를 환경 변수로 설정:
+   ```bash
+   DB_URL=jdbc:mysql://[AIVEN_HOST]:[PORT]/culturemap?useSSL=true&serverTimezone=Asia/Seoul
+   DB_USERNAME=[AIVEN_USERNAME]
+   DB_PASSWORD=[AIVEN_PASSWORD]
+   ```
+3. Fly.io Secrets에 설정:
+   ```bash
+   flyctl secrets set -a culturemap-api \
+     DB_URL="jdbc:mysql://..." \
+     DB_USERNAME="..." \
+     DB_PASSWORD="..."
+   ```
+
+#### 로컬 개발용 MySQL (Docker Compose)
+
+로컬 개발 시에는 Docker Compose의 MySQL 컨테이너를 사용합니다:
+- 포트: 3306 (프로덕션), 3309 (개발)
+- 초기화 스크립트: `database/init.sql`
 
 ---
 
@@ -359,3 +626,19 @@ const API_BASE_URL = 'http://localhost:8080/api';
 **작성일**: 2024년  
 **최종 업데이트**: 2025년 12월  
 **프로젝트 버전**: v2.0
+
+---
+
+## 🔗 배포 링크
+
+- **프로덕션 사이트**: https://culturemap.fly.dev
+- **API 서버**: https://culturemap-api.fly.dev
+- **API 문서 (Swagger)**: https://culturemap-api.fly.dev/swagger-ui.html
+
+---
+
+## 📚 추가 문서
+
+- [배포 준비 상태 정리](./배포_준비_상태_정리.md): Docker 및 배포 관련 상세 정보
+- [프론트엔드 README](./frontend/README.md): 프론트엔드 프로젝트 상세 정보
+- [프론트엔드 환경 설정](./frontend/SETUP_ENV.md): 프론트엔드 환경 변수 설정 가이드
