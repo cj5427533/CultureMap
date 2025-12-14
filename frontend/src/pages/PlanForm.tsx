@@ -265,36 +265,7 @@ export const PlanForm = () => {
     }
   };
 
-  // 주변 문화시설 검색
-  const loadNearbyPlaces = useCallback(async (lat: number, lng: number, radius: number = 3000) => {
-    setMapLoading(true);
-    setMapError(null);
-
-    try {
-      const places = await kakaoLocalService.searchNearbyCulturePlaces(lat, lng, radius);
-      setNearbyPlaces(places);
-      
-      // Place 배열로 변환하여 검색 결과에 표시
-      const convertedPlaces: Place[] = places.map((kakaoPlace) => ({
-        id: parseInt(kakaoPlace.id) || 0,
-        name: kakaoPlace.place_name,
-        address: kakaoPlace.road_address_name || kakaoPlace.address_name,
-        category: kakaoPlace.category_name,
-        latitude: parseFloat(kakaoPlace.y),
-        longitude: parseFloat(kakaoPlace.x),
-      }));
-      
-      setPlaces(convertedPlaces);
-      updateMarkers(places, lat, lng);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '주변 문화시설을 불러오는데 실패했습니다.';
-      setMapError(errorMessage);
-    } finally {
-      setMapLoading(false);
-    }
-  }, [updateMarkers]);
-
-  // 마커 업데이트
+  // 마커 업데이트 (먼저 선언)
   const updateMarkers = useCallback((placesToShow: KakaoPlace[], userLat?: number, userLng?: number) => {
     if (!mapInstanceRef.current || !window.kakao || !window.kakao.maps) {
       return;
@@ -318,9 +289,12 @@ export const PlanForm = () => {
     placesToShow.forEach((place, index) => {
       const position = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
 
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      
       const marker = new window.kakao.maps.Marker({
         position: position,
-        map: mapInstanceRef.current,
+        map: map,
       });
 
       const infoContent = `
@@ -371,10 +345,39 @@ export const PlanForm = () => {
       bounds.extend(position);
     });
 
-    if (placesToShow.length > 0) {
+    if (placesToShow.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.setBounds(bounds);
     }
   }, [handleAddKakaoPlace]);
+
+  // 주변 문화시설 검색
+  const loadNearbyPlaces = useCallback(async (lat: number, lng: number, radius: number = 3000) => {
+    setMapLoading(true);
+    setMapError(null);
+
+    try {
+      const places = await kakaoLocalService.searchNearbyCulturePlaces(lat, lng, radius);
+      setNearbyPlaces(places);
+      
+      // Place 배열로 변환하여 검색 결과에 표시
+      const convertedPlaces: Place[] = places.map((kakaoPlace) => ({
+        id: parseInt(kakaoPlace.id) || 0,
+        name: kakaoPlace.place_name,
+        address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+        category: kakaoPlace.category_name,
+        latitude: parseFloat(kakaoPlace.y),
+        longitude: parseFloat(kakaoPlace.x),
+      }));
+      
+      setPlaces(convertedPlaces);
+      updateMarkers(places, lat, lng);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '주변 문화시설을 불러오는데 실패했습니다.';
+      setMapError(errorMessage);
+    } finally {
+      setMapLoading(false);
+    }
+  }, [updateMarkers]);
 
   // 지도에서 문화시설 찾기
   const handleSearchCulturePlaces = useCallback(() => {

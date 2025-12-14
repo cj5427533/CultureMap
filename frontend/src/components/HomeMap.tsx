@@ -1202,7 +1202,7 @@ export const HomeMap = () => {
       {/* 로그인 필요 안내 모달 */}
       {showLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowLoginModal(false)}>
-          <Card className="max-w-md w-full mx-4 border-2 border-green-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="max-w-md w-full mx-4 border-2 border-green-200 bg-white shadow-2xl rounded-xl" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="text-center py-8 md:py-10 px-6 md:px-8">
               <div className="text-6xl md:text-7xl mb-6">🔒</div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6">
@@ -1227,7 +1227,7 @@ export const HomeMap = () => {
                 </Link>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       )}
     </Card>
