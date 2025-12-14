@@ -86,6 +86,7 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           version: latest
+          token: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Verify Fly.io token
         run: |
@@ -123,6 +124,7 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           version: latest
+          token: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Verify Fly.io token
         run: |
