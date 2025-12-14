@@ -42,8 +42,6 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
     ports:
       - "8080:8080"
-    volumes:
-      - ../history_image:/app/history_image
     depends_on:
       mysql:
         condition: service_healthy

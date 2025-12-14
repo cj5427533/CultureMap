@@ -6,6 +6,9 @@
 app = "culturemap-api"
 primary_region = 'nrt'
 
+[build]
+  dockerfile = "docker/Dockerfile.fly"
+
 [env]
   CORS_ALLOWED_ORIGINS = "https://culturemap.fly.dev,https://culturemap-api.fly.dev,http://localhost:5173"
   SPRING_PROFILES_ACTIVE = "prod"

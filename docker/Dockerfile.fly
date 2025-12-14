@@ -16,9 +16,6 @@
     
     COPY --from=build /app/build/libs/*.jar app.jar
     
-    # history_image 폴더 및 이미지 파일들 복사
-    COPY history_image /app/history_image
-    
     # Fly에서 내부 포트를 8080으로 잡았으니 그대로 사용
     EXPOSE 8080
     

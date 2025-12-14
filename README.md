@@ -107,12 +107,15 @@ culturemap/
 ├── ci/
 │   └── Jenkinsfile                 # Jenkins 파이프라인 설정
 ├── docker/
-│   ├── Dockerfile                  # 백엔드 프로덕션 Dockerfile
+│   ├── Dockerfile                  # 백엔드 프로덕션 Dockerfile (Docker Compose용)
 │   ├── Dockerfile.dev              # 백엔드 개발용 Dockerfile
+│   ├── Dockerfile.fly              # 백엔드 Fly.io 배포용 Dockerfile
 │   ├── docker-compose.yml          # 프로덕션 Docker Compose 설정
 │   └── docker-compose.dev.yml      # 개발용 Docker Compose 설정
 ├── database/
 │   └── init.sql                    # MySQL 초기화 스크립트
+├── scripts/
+│   └── git_push.bat                # Git 푸시 유틸리티 스크립트
 ├── src/main/java/com/culturemap/   # 백엔드 소스 코드
 │   ├── config/                     # 설정 클래스 (Security, Swagger 등)
 │   ├── controller/                 # REST API 컨트롤러
@@ -123,10 +126,11 @@ culturemap/
 │   ├── security/                   # JWT 인증 관련
 │   └── service/                    # 비즈니스 로직
 ├── src/main/resources/
+│   ├── static/                     # 정적 리소스 (이미지, CSS 등)
+│   │   └── history_image/          # 히스토리 이미지 파일
 │   ├── application.properties      # 기본 애플리케이션 설정
 │   ├── application-dev.properties  # 개발 환경 설정
 │   └── application-prod.properties # 프로덕션 환경 설정
-├── Dockerfile                      # 루트 Dockerfile (Fly.io 배포용)
 ├── fly.toml                        # Fly.io 백엔드 앱 설정
 └── frontend/                       # React 프론트엔드
     ├── src/
@@ -318,11 +322,14 @@ docker-compose -f docker/docker-compose.yml ps
 #### 백엔드 이미지 빌드
 
 ```bash
-# 프로덕션 이미지
+# 프로덕션 이미지 (Docker Compose용)
 docker build -t culturemap-backend -f docker/Dockerfile .
 
 # 개발 이미지
 docker build -t culturemap-backend-dev -f docker/Dockerfile.dev .
+
+# Fly.io 배포용 이미지
+docker build -t culturemap-backend-fly -f docker/Dockerfile.fly .
 ```
 
 #### 프론트엔드 이미지 빌드

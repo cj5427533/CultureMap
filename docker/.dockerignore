@@ -50,5 +50,5 @@ README.md
 # Test
 src/test/
 
-# History images (컨테이너 내부에서 관리)
-history_image/*
+# Note: history_image는 이제 src/main/resources/static/history_image로 이동되어
+# 빌드 시 자동으로 JAR에 포함됩니다.

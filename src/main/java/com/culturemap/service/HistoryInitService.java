@@ -6,10 +6,15 @@ import com.culturemap.repository.HistoryRepository;
 import com.culturemap.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -26,6 +31,7 @@ public class HistoryInitService {
 
     private final MemberRepository memberRepository;
     private final HistoryRepository historyRepository;
+    private final ResourceLoader resourceLoader;
 
     @Transactional
     public void initializeHistoryImages() {
@@ -49,9 +55,24 @@ public class HistoryInitService {
         }
 
         try {
-            // history_image 폴더 경로
-            Path historyImagePath = Paths.get("history_image");
-            File historyImageDir = historyImagePath.toFile();
+            // history_image 폴더 경로 (classpath 리소스)
+            Resource resource = resourceLoader.getResource("classpath:/static/history_image");
+            File historyImageDir;
+            
+            try {
+                URI uri = resource.getURI();
+                if (uri.getScheme().equals("jar")) {
+                    // JAR 파일 내부인 경우 (프로덕션)
+                    log.warn("History 초기화: JAR 파일 내부에서는 파일 시스템 접근이 불가능합니다. 멤버 ID: {}", member.getId());
+                    return;
+                } else {
+                    // 파일 시스템인 경우 (개발 환경)
+                    historyImageDir = new File(uri);
+                }
+            } catch (IOException e) {
+                log.warn("History 초기화: history_image 리소스를 찾을 수 없습니다. 멤버 ID: {}", member.getId(), e);
+                return;
+            }
 
             if (!historyImageDir.exists() || !historyImageDir.isDirectory()) {
                 log.warn("History 초기화: history_image 폴더를 찾을 수 없습니다. 멤버 ID: {}", member.getId());
