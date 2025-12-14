@@ -11,6 +11,8 @@ import com.culturemap.repository.RefreshTokenRepository;
 import com.culturemap.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ public class MemberService {
     private final JwtUtil jwtUtil;
     private final HistoryInitService historyInitService;
     private final HistoryRepository historyRepository;
+    private final RateLimitService rateLimitService;
     
     private static final String TARGET_EMAIL = "cj5427533@o365.jeiu.ac.kr";
 
@@ -80,13 +83,23 @@ public class MemberService {
                 .build();
     }
 
-    public AuthResponse login(AuthRequest request) {
+    public AuthResponse login(AuthRequest request, String clientIp) {
+        String identifier = clientIp + ":" + request.getEmail();
+        
+        // 레이트 리밋 확인
+        if (rateLimitService.isLoginAttemptExceeded(identifier)) {
+            throw new IllegalArgumentException("로그인 시도 횟수를 초과했습니다. 5분 후 다시 시도해주세요.");
+        }
+        
         Member member = memberRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다"));
 
         if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
             throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다");
         }
+        
+        // 로그인 성공 시 시도 횟수 초기화
+        rateLimitService.resetLoginAttempts(identifier);
 
         String accessToken = jwtUtil.generateToken(member.getEmail());
         String refreshToken = jwtUtil.generateRefreshToken(member.getEmail());
@@ -173,6 +186,26 @@ public class MemberService {
                 .nickname(member.getNickname())
                 .role(member.getRole() != null ? member.getRole() : "USER")
                 .build();
+    }
+
+    /**
+     * Authentication 객체에서 사용자 ID 추출
+     * @param authentication 인증 객체
+     * @return 사용자 ID, 인증되지 않은 경우 null
+     */
+    @Transactional(readOnly = true)
+    public Long getUserIdByAuthentication(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        try {
+            String email = ((UserDetails) authentication.getPrincipal()).getUsername();
+            return memberRepository.findByEmail(email)
+                    .map(Member::getId)
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
 

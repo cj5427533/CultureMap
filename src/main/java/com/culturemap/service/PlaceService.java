@@ -6,6 +6,7 @@ import com.culturemap.dto.PlaceResponse;
 import com.culturemap.repository.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,10 @@ public class PlaceService {
 
     private final PlaceRepository placeRepository;
     private final CacheService cacheService;
+    private final RateLimitService rateLimitService;
+    
+    @Autowired(required = false)
+    private ExternalApiService externalApiService;
 
     @Transactional(readOnly = true)
     public List<PlaceResponse> searchPlaces(String keyword, Long userId) {
@@ -181,5 +186,52 @@ public class PlaceService {
                     : null)
                 .description((String) map.get("description"))
                 .build();
+    }
+
+    /**
+     * Kakao Local API를 통한 주변 문화시설 검색 (레이트 리밋 체크 포함)
+     * @param lng 경도
+     * @param lat 위도
+     * @param radius 반경 (미터)
+     * @param clientIp 클라이언트 IP 주소
+     * @return Kakao API 응답 JSON 문자열
+     * @throws IllegalArgumentException 레이트 리밋 초과 시
+     */
+    @Transactional(readOnly = true)
+    public String searchNearbyCulturePlaces(double lng, double lat, int radius, String clientIp) {
+        // 레이트 리밋 확인
+        if (rateLimitService.isSearchExceeded(clientIp)) {
+            throw new IllegalArgumentException("검색 API 호출 횟수를 초과했습니다. 1분 후 다시 시도해주세요.");
+        }
+        
+        if (externalApiService == null) {
+            throw new IllegalStateException("외부 API 서비스를 사용할 수 없습니다.");
+        }
+        
+        return externalApiService.searchNearbyCulturePlaces(lng, lat, radius);
+    }
+
+    /**
+     * Kakao Local API를 통한 위치 기반 키워드 검색 (레이트 리밋 체크 포함)
+     * @param query 검색 키워드
+     * @param lng 경도
+     * @param lat 위도
+     * @param radius 반경 (미터)
+     * @param clientIp 클라이언트 IP 주소
+     * @return Kakao API 응답 JSON 문자열
+     * @throws IllegalArgumentException 레이트 리밋 초과 시
+     */
+    @Transactional(readOnly = true)
+    public String searchKeywordNearby(String query, double lng, double lat, int radius, String clientIp) {
+        // 레이트 리밋 확인
+        if (rateLimitService.isSearchExceeded(clientIp)) {
+            throw new IllegalArgumentException("검색 API 호출 횟수를 초과했습니다. 1분 후 다시 시도해주세요.");
+        }
+        
+        if (externalApiService == null) {
+            throw new IllegalStateException("외부 API 서비스를 사용할 수 없습니다.");
+        }
+        
+        return externalApiService.searchKeywordNearby(query, lng, lat, radius);
     }
 }

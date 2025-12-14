@@ -4,6 +4,7 @@ import com.culturemap.dto.AdminStatsResponse;
 import com.culturemap.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,22 @@ public class AdminStatsService {
         this.planPostRepository = planPostRepository;
         this.commentRepository = commentRepository;
         this.ratingRepository = ratingRepository;
+    }
+
+    /**
+     * 관리자 권한 확인
+     * @param authentication 인증 객체
+     * @return 관리자인 경우 true
+     */
+    @Transactional(readOnly = true)
+    public boolean isAdmin(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        String email = authentication.getName();
+        return memberRepository.findByEmail(email)
+                .map(member -> "ADMIN".equals(member.getRole()))
+                .orElse(false);
     }
 
     public AdminStatsResponse getStats() {

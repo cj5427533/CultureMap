@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,18 @@ public class HistoryInitService {
         initializeHistoryForMember(adminMember);
     }
     
+    /**
+     * Authentication을 받아서 멤버 히스토리 초기화
+     * @param authentication 인증 객체
+     */
+    @Transactional
+    public void initializeHistoryForMember(Authentication authentication) {
+        String email = ((UserDetails) authentication.getPrincipal()).getUsername();
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+        initializeHistoryForMember(member);
+    }
+
     @Transactional
     public void initializeHistoryForMember(Member member) {
         if (member == null) {

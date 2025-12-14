@@ -1,54 +1,34 @@
 package com.culturemap.controller;
 
-import com.culturemap.domain.Member;
 import com.culturemap.dto.PlaceRequest;
 import com.culturemap.dto.PlaceResponse;
-import com.culturemap.repository.MemberRepository;
 import com.culturemap.service.CacheService;
-import com.culturemap.service.ExternalApiService;
+import com.culturemap.service.MemberService;
 import com.culturemap.service.PlaceService;
-import com.culturemap.service.RateLimitService;
 import com.culturemap.util.HttpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/places")
+@RequiredArgsConstructor
 public class PlaceController {
 
     private final PlaceService placeService;
-    private final ExternalApiService externalApiService;
-    private final RateLimitService rateLimitService;
     private final CacheService cacheService;
-    private final MemberRepository memberRepository;
-
-    public PlaceController(
-            PlaceService placeService,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) ExternalApiService externalApiService,
-            RateLimitService rateLimitService,
-            CacheService cacheService,
-            MemberRepository memberRepository) {
-        this.placeService = placeService;
-        this.externalApiService = externalApiService;
-        this.rateLimitService = rateLimitService;
-        this.cacheService = cacheService;
-        this.memberRepository = memberRepository;
-    }
+    private final MemberService memberService;
 
     @GetMapping
     public ResponseEntity<List<PlaceResponse>> searchPlaces(
             @RequestParam(required = false) String keyword,
             Authentication authentication) {
-        Long userId = getUserId(authentication);
+        Long userId = memberService.getUserIdByAuthentication(authentication);
         List<PlaceResponse> responses = placeService.searchPlaces(keyword, userId);
         return ResponseEntity.ok(responses);
     }
@@ -61,7 +41,7 @@ public class PlaceController {
 
     @GetMapping("/recent-searches")
     public ResponseEntity<List<String>> getRecentSearches(Authentication authentication) {
-        Long userId = getUserId(authentication);
+        Long userId = memberService.getUserIdByAuthentication(authentication);
         if (userId == null) {
             return ResponseEntity.ok(List.of());
         }
@@ -71,25 +51,11 @@ public class PlaceController {
 
     @DeleteMapping("/recent-searches")
     public ResponseEntity<Void> clearRecentSearches(Authentication authentication) {
-        Long userId = getUserId(authentication);
+        Long userId = memberService.getUserIdByAuthentication(authentication);
         if (userId != null) {
             cacheService.clearRecentSearches(userId);
         }
         return ResponseEntity.noContent().build();
-    }
-
-    private Long getUserId(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-        try {
-            String email = ((UserDetails) authentication.getPrincipal()).getUsername();
-            return memberRepository.findByEmail(email)
-                    .map(Member::getId)
-                    .orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     @GetMapping("/{id}")
@@ -123,19 +89,14 @@ public class PlaceController {
         
         String clientIp = HttpUtil.getClientIpAddress(httpRequest);
         
-        // 레이트 리밋 확인
-        if (rateLimitService.isSearchExceeded(clientIp)) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "검색 API 호출 횟수를 초과했습니다. 1분 후 다시 시도해주세요.");
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+        try {
+            String response = placeService.searchNearbyCulturePlaces(lng, lat, radius, clientIp);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         }
-        
-        if (externalApiService == null) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(null);
-        }
-        
-        String response = externalApiService.searchNearbyCulturePlaces(lng, lat, radius);
-        return ResponseEntity.ok(response);
     }
 
     /**
@@ -156,19 +117,14 @@ public class PlaceController {
         
         String clientIp = HttpUtil.getClientIpAddress(httpRequest);
         
-        // 레이트 리밋 확인
-        if (rateLimitService.isSearchExceeded(clientIp)) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "검색 API 호출 횟수를 초과했습니다. 1분 후 다시 시도해주세요.");
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+        try {
+            String response = placeService.searchKeywordNearby(query, lng, lat, radius, clientIp);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         }
-        
-        if (externalApiService == null) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(null);
-        }
-        
-        String response = externalApiService.searchKeywordNearby(query, lng, lat, radius);
-        return ResponseEntity.ok(response);
     }
 }
 
