@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { planService } from '../services/planService';
 import { placeService } from '../services/placeService';
+import { kakaoLocalService, type KakaoPlace } from '../services/kakaoLocalService';
+import { useGeolocation } from '../hooks/useGeolocation';
 import type { PlanRequest, Place } from '../types/index';
 import { Calendar } from '../components/Calendar';
 import { Button } from '../components/ui/Button';
@@ -23,6 +25,18 @@ export const PlanForm = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'date' | 'title' | 'places'>(isEdit ? 'places' : 'date');
+  
+  // 카카오 지도 관련 state
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<InstanceType<Window['kakao']['maps']['Map']> | null>(null);
+  const markersRef = useRef<InstanceType<Window['kakao']['maps']['Marker']>[]>([]);
+  const infoWindowsRef = useRef<InstanceType<Window['kakao']['maps']['InfoWindow']>[]>([]);
+  const { latitude, longitude, error: geoError } = useGeolocation();
+  const [nearbyPlaces, setNearbyPlaces] = useState<KakaoPlace[]>([]);
+  const [mapLoading, setMapLoading] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [distanceFilter, setDistanceFilter] = useState<number>(3000);
 
   useEffect(() => {
     if (isEdit && id) {
@@ -80,6 +94,35 @@ export const PlanForm = () => {
     }
   };
 
+  // 카카오 장소를 Place로 변환하여 추가
+  const handleAddKakaoPlace = async (kakaoPlace: KakaoPlace) => {
+    try {
+      // 카카오 장소를 DB에 저장
+      const savedPlace = await placeService.createPlace({
+        name: kakaoPlace.place_name,
+        address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+        category: kakaoPlace.category_name,
+        latitude: Number(kakaoPlace.y),
+        longitude: Number(kakaoPlace.x),
+        externalId: kakaoPlace.id,
+      });
+
+      // 이미 추가되어 있지 않으면 추가
+      if (!selectedPlaces.find(p => p.id === savedPlace.id)) {
+        setSelectedPlaces([...selectedPlaces, savedPlace]);
+        setFormData({ 
+          ...formData, 
+          placeIds: [...formData.placeIds, savedPlace.id],
+          visitTimes: { ...formData.visitTimes }
+        });
+        alert('장소가 추가되었습니다!');
+      }
+    } catch (err) {
+      console.error('장소 추가 실패:', err);
+      alert('장소를 추가하는데 실패했습니다.');
+    }
+  };
+
   const handleAddPlace = (place: Place) => {
     if (!selectedPlaces.find(p => p.id === place.id)) {
       setSelectedPlaces([...selectedPlaces, place]);
@@ -94,7 +137,7 @@ export const PlanForm = () => {
   const handleRemovePlace = (placeId: number) => {
     setSelectedPlaces(selectedPlaces.filter(p => p.id !== placeId));
     const newVisitTimes = { ...formData.visitTimes };
-    delete newVisitTimes[String(placeId)]; // 문자열 키로 삭제
+    delete newVisitTimes[String(placeId)];
     setFormData({ 
       ...formData, 
       placeIds: formData.placeIds.filter(id => id !== placeId),
@@ -128,7 +171,6 @@ export const PlanForm = () => {
     }
     setFormData({ ...formData, visitTimes: newVisitTimes });
     
-    // selectedPlaces도 업데이트
     setSelectedPlaces(selectedPlaces.map(p => 
       p.id === placeId ? { ...p, visitTime: time } : p
     ));
@@ -148,10 +190,8 @@ export const PlanForm = () => {
       return;
     }
     if (isEdit) {
-      // 수정 모드면 바로 저장
       handleSubmit();
     } else {
-      // 새 플랜 생성 모드면 플랜 생성 후 장소 추가 단계로
       handleCreatePlan();
     }
   };
@@ -186,14 +226,9 @@ export const PlanForm = () => {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
-    if (!isEdit && formData.placeIds.length === 0) {
-      // 새 플랜 생성 시 장소가 없어도 허용 (나중에 추가 가능)
-    }
 
     setLoading(true);
     try {
-      // visitTimes를 백엔드 형식으로 변환 (키는 이미 문자열)
       const visitTimes: { [key: string]: string } = {};
       if (formData.visitTimes) {
         Object.keys(formData.visitTimes).forEach(key => {
@@ -230,15 +265,215 @@ export const PlanForm = () => {
     }
   };
 
-  // 수정 모드이거나 장소 추가 단계일 때만 장소 관리 UI 표시
+  // 주변 문화시설 검색
+  const loadNearbyPlaces = useCallback(async (lat: number, lng: number, radius: number = 3000) => {
+    setMapLoading(true);
+    setMapError(null);
+
+    try {
+      const places = await kakaoLocalService.searchNearbyCulturePlaces(lat, lng, radius);
+      setNearbyPlaces(places);
+      
+      // Place 배열로 변환하여 검색 결과에 표시
+      const convertedPlaces: Place[] = places.map((kakaoPlace) => ({
+        id: parseInt(kakaoPlace.id) || 0,
+        name: kakaoPlace.place_name,
+        address: kakaoPlace.road_address_name || kakaoPlace.address_name,
+        category: kakaoPlace.category_name,
+        latitude: parseFloat(kakaoPlace.y),
+        longitude: parseFloat(kakaoPlace.x),
+      }));
+      
+      setPlaces(convertedPlaces);
+      updateMarkers(places, lat, lng);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '주변 문화시설을 불러오는데 실패했습니다.';
+      setMapError(errorMessage);
+    } finally {
+      setMapLoading(false);
+    }
+  }, []);
+
+  // 마커 업데이트
+  const updateMarkers = useCallback((placesToShow: KakaoPlace[], userLat?: number, userLng?: number) => {
+    if (!mapInstanceRef.current || !window.kakao || !window.kakao.maps) {
+      return;
+    }
+
+    // 기존 마커 및 인포윈도우 제거
+    markersRef.current.forEach(marker => marker.setMap(null));
+    infoWindowsRef.current.forEach(infoWindow => infoWindow.close());
+    markersRef.current = [];
+    infoWindowsRef.current = [];
+
+    if (placesToShow.length === 0) {
+      return;
+    }
+
+    const bounds = new window.kakao.maps.LatLngBounds();
+    if (userLat && userLng) {
+      bounds.extend(new window.kakao.maps.LatLng(userLat, userLng));
+    }
+
+    placesToShow.forEach((place, index) => {
+      const position = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
+
+      const marker = new window.kakao.maps.Marker({
+        position: position,
+        map: mapInstanceRef.current,
+      });
+
+      const infoContent = `
+        <div style="padding:12px;min-width:200px;max-width:280px;">
+          <div style="font-weight:bold;font-size:14px;margin-bottom:6px;color:#333;">${place.place_name}</div>
+          <div style="font-size:11px;color:#666;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #eee;">
+            ${place.category_name}
+          </div>
+          ${place.road_address_name ? `
+            <div style="font-size:11px;color:#555;margin-bottom:2px;">
+              <span style="color:#999;">도로명:</span> ${place.road_address_name}
+            </div>
+          ` : ''}
+          <div style="font-size:11px;color:#555;margin-bottom:4px;">
+            <span style="color:#999;">지번:</span> ${place.address_name}
+          </div>
+          <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;">
+            <button id="add-place-btn-${index}" 
+                    style="width:100%;padding:6px;background:linear-gradient(to right, #22c55e, #16a34a);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;box-shadow:0 2px 4px rgba(34,197,94,0.3);transition:all 0.2s;">
+              플랜에 추가
+            </button>
+          </div>
+        </div>
+      `;
+
+      const infoWindow = new window.kakao.maps.InfoWindow({
+        content: infoContent,
+      });
+
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        if (!mapInstanceRef.current) return;
+        infoWindowsRef.current.forEach(iw => iw.close());
+        infoWindow.open(mapInstanceRef.current, marker);
+        
+        setTimeout(() => {
+          const btn = document.getElementById(`add-place-btn-${index}`);
+          if (btn) {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              handleAddKakaoPlace(place);
+            };
+          }
+        }, 100);
+      });
+
+      markersRef.current.push(marker);
+      infoWindowsRef.current.push(infoWindow);
+      bounds.extend(position);
+    });
+
+    if (placesToShow.length > 0) {
+      mapInstanceRef.current.setBounds(bounds);
+    }
+  }, []);
+
+  // 지도에서 문화시설 찾기
+  const handleSearchCulturePlaces = useCallback(() => {
+    if (!mapInstanceRef.current || !window.kakao || !window.kakao.maps) {
+      setMapError('지도가 아직 로드되지 않았습니다.');
+      return;
+    }
+
+    const center = mapInstanceRef.current.getCenter();
+    const lat = center.getLat();
+    const lng = center.getLng();
+
+    loadNearbyPlaces(lat, lng, distanceFilter);
+  }, [loadNearbyPlaces, distanceFilter]);
+
+  // 지도 초기화
+  const initializeMap = useCallback(() => {
+    if (!mapRef.current || !latitude || !longitude) {
+      return;
+    }
+
+    try {
+      const userPosition = new window.kakao.maps.LatLng(latitude, longitude);
+
+      const mapOption = {
+        center: userPosition,
+        level: 5,
+      };
+
+      const map = new window.kakao.maps.Map(mapRef.current, mapOption);
+      mapInstanceRef.current = map;
+      setIsMapReady(true);
+
+      // 사용자 위치 마커
+      const userMarker = new window.kakao.maps.Marker({
+        position: userPosition,
+        map: map,
+      });
+
+      const imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
+      const imageSize = new window.kakao.maps.Size(24, 35);
+      const imageOption = { offset: new window.kakao.maps.Point(12, 35) };
+      const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+      userMarker.setImage(markerImage);
+
+      const userInfoWindow = new window.kakao.maps.InfoWindow({
+        content: '<div style="padding:5px;font-size:12px;font-weight:bold;">내 위치</div>',
+      });
+      userInfoWindow.open(map, userMarker);
+    } catch (err) {
+      console.error('지도 초기화 실패:', err);
+      setMapError('지도를 초기화하는데 실패했습니다.');
+    }
+  }, [latitude, longitude]);
+
+  // 카카오 지도 SDK 로드
+  useEffect(() => {
+    if (!latitude || !longitude) {
+      return;
+    }
+
+    const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+    
+    if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
+      setMapError('Kakao API 키가 설정되지 않았습니다.');
+      return;
+    }
+
+    if (window.kakao && window.kakao.maps) {
+      initializeMap();
+      return;
+    }
+
+    const existingScripts = document.querySelectorAll('script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
+    existingScripts.forEach(script => script.remove());
+
+    const script = document.createElement('script');
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services`;
+    script.async = true;
+
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        initializeMap();
+      });
+    };
+
+    script.onerror = () => {
+      setMapError('Kakao Maps SDK 스크립트 로드에 실패했습니다.');
+    };
+
+    document.head.appendChild(script);
+  }, [latitude, longitude, initializeMap]);
+
   const showPlaceManagement = isEdit || step === 'places';
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-      {/* 시각적 위계: 제목 */}
       <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 text-gray-900">{isEdit ? '플랜 수정' : '새 플랜 만들기'}</h1>
       
-      {/* 일관성: Step 1: 날짜 선택 */}
       {step === 'date' && (
         <Card className="border-2 border-green-200">
           <div className="space-y-6 md:space-y-8">
@@ -249,7 +484,6 @@ export const PlanForm = () => {
                 onDateSelect={(date) => setFormData({ ...formData, planDate: date })}
               />
             </div>
-            {/* 여백과 정렬: 버튼 */}
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               <Button variant="secondary" onClick={() => navigate('/plans')} className="flex-1 w-full sm:w-auto">
                 취소
@@ -262,17 +496,14 @@ export const PlanForm = () => {
         </Card>
       )}
 
-      {/* 일관성: Step 2: 플랜 이름 설정 */}
       {step === 'title' && (
         <Card className="border-2 border-green-200">
           <div className="space-y-6 md:space-y-8">
             <div>
               <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-900">2단계: 플랜 이름 설정</h2>
-              {/* 가독성: 설명 텍스트 */}
               <p className="text-base md:text-lg text-gray-700 mb-4 md:mb-6 leading-relaxed">
                 플랜의 이름을 입력해주세요. (예: 데이트, 가족여행, 친구모임 등)
               </p>
-              {/* 가독성: 입력 필드 */}
               <input
                 type="text"
                 value={formData.title}
@@ -281,7 +512,6 @@ export const PlanForm = () => {
                 className="w-full px-4 md:px-5 py-3 md:py-3.5 border-2 border-gray-300 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-base md:text-lg"
                 autoFocus
               />
-              {/* 리듬: 추천 버튼 */}
               <div className="mt-4 md:mt-6 flex flex-wrap gap-2 md:gap-3">
                 {['데이트', '가족여행', '친구모임', '혼자여행', '문화탐방'].map((suggestion) => (
                   <button
@@ -294,7 +524,6 @@ export const PlanForm = () => {
                 ))}
               </div>
             </div>
-            {/* 여백과 정렬: 버튼 */}
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               <Button variant="secondary" onClick={() => setStep('date')} className="flex-1 w-full sm:w-auto">
                 이전
@@ -312,7 +541,6 @@ export const PlanForm = () => {
         </Card>
       )}
 
-      {/* 일관성: Step 3: 장소 추가 (수정 모드 또는 플랜 생성 후) */}
       {showPlaceManagement && (
         <form onSubmit={handleSubmit}>
           <Card className="mb-6 md:mb-8 border-2 border-green-200">
@@ -328,7 +556,8 @@ export const PlanForm = () => {
           <Card className="mb-6 md:mb-8 border-2 border-green-200">
             <div className="mb-4 md:mb-6">
               <h3 className="text-lg md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-gray-900">장소 검색</h3>
-              {/* 여백과 정렬: 검색 입력 */}
+              
+              {/* 검색 입력 */}
               <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
                 <input
                   type="text"
@@ -342,7 +571,65 @@ export const PlanForm = () => {
                   검색
                 </Button>
               </div>
-              {/* 가독성: 검색 결과 목록 */}
+
+              {/* 카카오 지도 검색 섹션 */}
+              <div className="mb-4 md:mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-base md:text-lg font-semibold text-gray-800">카카오 지도에서 검색하기</h4>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={distanceFilter}
+                      onChange={(e) => setDistanceFilter(Number(e.target.value))}
+                      className="px-3 py-1.5 text-sm border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                    >
+                      <option value="1000">1km</option>
+                      <option value="2000">2km</option>
+                      <option value="3000">3km</option>
+                      <option value="5000">5km</option>
+                    </select>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleSearchCulturePlaces}
+                      disabled={mapLoading || !isMapReady}
+                      className="text-sm"
+                    >
+                      {mapLoading ? '검색 중...' : '문화정보 찾기'}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* 작은 지도 */}
+                <div className="w-full rounded-xl p-1 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 shadow-lg mb-3">
+                  <div
+                    ref={mapRef}
+                    className="w-full rounded-lg overflow-hidden bg-gray-100"
+                    style={{ height: '300px', minHeight: '300px' }}
+                  >
+                    {mapError && !mapInstanceRef.current && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center p-4">
+                          <p className="text-red-600 font-semibold mb-2 text-sm">{mapError}</p>
+                          {geoError && (
+                            <p className="text-xs text-gray-600">{geoError}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {mapError && (
+                  <p className="text-sm text-red-600 mb-2">{mapError}</p>
+                )}
+                {!mapLoading && !mapError && nearbyPlaces.length > 0 && (
+                  <p className="text-sm text-gray-600 mb-2">
+                    주변 {nearbyPlaces.length}개의 문화시설을 찾았습니다.
+                  </p>
+                )}
+              </div>
+
+              {/* 검색 결과 목록 */}
               <div className="max-h-60 overflow-y-auto border-2 border-gray-200 rounded-lg md:rounded-xl p-4 md:p-5">
                 {places.length === 0 ? (
                   <p className="text-gray-600 text-center py-6 md:py-8 text-base md:text-lg font-medium">검색 결과가 없습니다.</p>
@@ -371,7 +658,6 @@ export const PlanForm = () => {
             </div>
           </Card>
 
-          {/* 리듬: 선택된 장소 섹션 */}
           <Card className="mb-6 md:mb-8 border-2 border-green-200">
             <div className="mb-4 md:mb-6">
               <h3 className="text-lg md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-gray-900">선택된 장소 <span className="text-green-600">({selectedPlaces.length}개)</span></h3>
@@ -384,7 +670,6 @@ export const PlanForm = () => {
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 md:mb-4 gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 md:gap-3 mb-2">
-                            {/* 대비: 번호 아이콘 */}
                             <span className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center text-sm md:text-base font-bold shadow-md">
                               {index + 1}
                             </span>
@@ -392,7 +677,6 @@ export const PlanForm = () => {
                           </div>
                           {place.address && <div className="text-sm md:text-base text-gray-700 ml-10 md:ml-12 mt-1">{place.address}</div>}
                         </div>
-                        {/* 정렬: 액션 버튼 */}
                         <div className="flex gap-2 md:gap-3">
                           <Button
                             type="button"
@@ -422,7 +706,6 @@ export const PlanForm = () => {
                           </Button>
                         </div>
                       </div>
-                      {/* 여백: 방문 시간 입력 */}
                       <div className="ml-10 md:ml-12">
                         <label className="block text-sm md:text-base font-semibold text-gray-800 mb-2 md:mb-3">
                           방문 시간 (선택사항)
@@ -441,7 +724,6 @@ export const PlanForm = () => {
             </div>
           </Card>
 
-          {/* 여백과 정렬: 제출 버튼 */}
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <Button type="button" variant="secondary" onClick={() => navigate('/plans')} className="flex-1 w-full sm:w-auto">
               취소
@@ -455,4 +737,3 @@ export const PlanForm = () => {
     </div>
   );
 };
-

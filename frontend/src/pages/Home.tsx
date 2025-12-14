@@ -15,9 +15,9 @@ export const Home = () => {
           <div className="flex flex-col items-center mb-3 md:mb-4 animate-fade-in">
             <div className="mb-2 md:mb-3 transform hover:scale-110 transition-transform duration-300">
               <img 
-                src="/CultureMap_logo.png" 
+                src="/CultureMap_logo_nuggi.png" 
                 alt="CultureMap 로고" 
-                className="h-8 md:h-10 lg:h-12 w-auto drop-shadow-2xl"
+                className="h-24 md:h-[120px] lg:h-36 w-auto drop-shadow-2xl"
               />
             </div>
             {/* 타이포그래피: 제목 개선 */}

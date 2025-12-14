@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useDebounce } from '../hooks/useDebounce';
 import { kakaoLocalService, type KakaoPlace } from '../services/kakaoLocalService';
@@ -35,6 +36,7 @@ export const HomeMap = () => {
   const [selectedPlaceIndex, setSelectedPlaceIndex] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [distanceFilter, setDistanceFilter] = useState<number>(3000); // 기본 반경 3km
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [filteredPlaces, setFilteredPlaces] = useState<KakaoPlace[]>([]);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [searchResults, setSearchResults] = useState<Place[]>([]);
@@ -182,7 +184,7 @@ export const HomeMap = () => {
 
   const handleAddToPlanClick = useCallback((place: KakaoPlace) => {
     if (!authService.isAuthenticated()) {
-      alert('로그인이 필요합니다.');
+      setShowLoginModal(true);
       return;
     }
     setSelectedPlace(place);
@@ -264,14 +266,12 @@ export const HomeMap = () => {
               </a>
             </div>
           ` : ''}
-          ${isAuthenticated ? `
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;">
-              <button id="add-to-plan-btn-${placeIndex}" 
-                      style="width:100%;padding:6px;background:linear-gradient(to right, #22c55e, #16a34a);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;box-shadow:0 2px 4px rgba(34,197,94,0.3);transition:all 0.2s;">
-                플랜에 추가
-              </button>
-            </div>
-          ` : ''}
+          <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;">
+            <button id="add-to-plan-btn-${placeIndex}" 
+                    style="width:100%;padding:6px;background:linear-gradient(to right, #22c55e, #16a34a);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;box-shadow:0 2px 4px rgba(34,197,94,0.3);transition:all 0.2s;">
+              플랜에 추가
+            </button>
+          </div>
         </div>
       `;
 
@@ -955,20 +955,18 @@ export const HomeMap = () => {
                       )}
                     </div>
                   </div>
-                  {authService.isAuthenticated() && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <Button
-                        variant="primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToPlanClick(place);
-                        }}
-                        className="w-full text-xs py-1"
-                      >
-                        플랜에 추가
-                      </Button>
-                    </div>
-                  )}
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <Button
+                      variant="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToPlanClick(place);
+                      }}
+                      className="w-full text-xs py-1"
+                    >
+                      플랜에 추가
+                    </Button>
+                  </div>
                 </div>
               );
             })}
@@ -1201,6 +1199,38 @@ export const HomeMap = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 로그인 필요 안내 모달 */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowLoginModal(false)}>
+          <Card className="max-w-md w-full mx-4 border-2 border-green-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center py-8 md:py-10 px-6 md:px-8">
+              <div className="text-6xl md:text-7xl mb-6">🔒</div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6">
+                로그인이 필요합니다
+              </h2>
+              <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 rounded-xl p-4 md:p-5 mb-6 md:mb-8">
+                <p className="text-base md:text-lg text-gray-800 font-semibold leading-relaxed">
+                  회원가입 및 로그인 후<br />
+                  플래너를 사용하실 수 있습니다.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                <Link to="/signup" className="flex-1" onClick={() => setShowLoginModal(false)}>
+                  <Button variant="primary" className="w-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+                    회원가입
+                  </Button>
+                </Link>
+                <Link to="/login" className="flex-1" onClick={() => setShowLoginModal(false)}>
+                  <Button variant="secondary" className="w-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+                    로그인
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
     </Card>
