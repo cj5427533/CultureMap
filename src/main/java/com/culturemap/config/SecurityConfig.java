@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // Swagger UI 및 API 문서
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
+                        // 정적 리소스 (favicon 등)
+                        .requestMatchers("/favicon.ico", "/robots.txt").permitAll()
                         // 모든 OPTIONS 요청 (CORS 프리플라이트)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 기존 인증 불필요 경로
