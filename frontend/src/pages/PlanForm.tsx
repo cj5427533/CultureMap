@@ -292,7 +292,7 @@ export const PlanForm = () => {
     } finally {
       setMapLoading(false);
     }
-  }, []);
+  }, [updateMarkers]);
 
   // 마커 업데이트
   const updateMarkers = useCallback((placesToShow: KakaoPlace[], userLat?: number, userLng?: number) => {
@@ -374,7 +374,7 @@ export const PlanForm = () => {
     if (placesToShow.length > 0) {
       mapInstanceRef.current.setBounds(bounds);
     }
-  }, []);
+  }, [handleAddKakaoPlace]);
 
   // 지도에서 문화시설 찾기
   const handleSearchCulturePlaces = useCallback(() => {

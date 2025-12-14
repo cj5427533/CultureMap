@@ -238,7 +238,6 @@ export const HomeMap = () => {
       });
 
       // 인포윈도우 내용 생성 (더 상세한 정보 포함)
-      const isAuthenticated = authService.isAuthenticated();
       const infoContent = `
         <div style="padding:12px;min-width:200px;max-width:280px;">
           <div style="font-weight:bold;font-size:14px;margin-bottom:6px;color:#333;">${place.place_name}</div>
@@ -587,8 +586,6 @@ export const HomeMap = () => {
       console.error('지도 초기화 실패:', err);
       setError('지도를 초기화하는데 실패했습니다: ' + (err as Error).message);
     }
-    // loadNearbyPlaces는 useCallback으로 감싸져 있어서 의존성에 포함하지 않아도 됨
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latitude, longitude]);
 
   useEffect(() => {
