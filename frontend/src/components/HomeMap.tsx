@@ -77,15 +77,6 @@ export const HomeMap = () => {
     }
   }, [applyFilters]);
 
-  // 필터 변경 시 필터 적용
-  useEffect(() => {
-    if (nearbyPlaces.length > 0) {
-      applyFilters(nearbyPlaces);
-    } else {
-      setFilteredPlaces([]);
-    }
-  }, [categoryFilter, nearbyPlaces, applyFilters]);
-
   // 디바운스된 검색 키워드로 장소 검색 (현재 위치 기반)
   useEffect(() => {
     const searchPlaces = async () => {
@@ -877,7 +868,7 @@ export const HomeMap = () => {
         <div
           ref={mapRef}
           className="w-full rounded-lg overflow-hidden bg-gray-100"
-          style={{ height: '400px', minHeight: '400px' }}
+          style={{ height: '520px', minHeight: '520px' }}
         >
         {error && !mapInstanceRef.current && (
           <div className="flex items-center justify-center h-full">

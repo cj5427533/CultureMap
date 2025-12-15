@@ -137,6 +137,12 @@ cd CultureMap
 ```
 백엔드: `http://localhost:8080`
 
+> 만약 `8080` 포트가 이미 사용 중이면, 다른 포트로 실행하세요.
+>
+> - **Windows (PowerShell)**: `$env:PORT=8081; .\gradlew bootRun`
+> - **Windows (CMD)**: `set PORT=8081 && .\gradlew bootRun`
+> - **IntelliJ**: VM options에 `-Dserver.port=8081` 추가
+
 #### 3. 프론트엔드 실행
 ```bash
 cd frontend
