@@ -10,6 +10,11 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+/**
+ * JWT 토큰 생성 및 검증 유틸리티
+ * - Access Token: 24시간 유효
+ * - Refresh Token: 7일 유효
+ */
 @Component
 public class JwtUtil {
 
@@ -22,10 +27,12 @@ public class JwtUtil {
     @Value("${jwt.refresh-expiration:604800000}") // 기본 7일
     private Long refreshExpiration;
 
+    /** HMAC-SHA 알고리즘을 사용한 서명 키 생성 */
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    /** Access Token 생성 (이메일을 subject로 포함) */
     public String generateToken(String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
@@ -38,6 +45,7 @@ public class JwtUtil {
                 .compact();
     }
 
+    /** JWT 토큰에서 이메일 추출 */
     public String getEmailFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -48,6 +56,7 @@ public class JwtUtil {
         return claims.getSubject();
     }
 
+    /** 토큰 유효성 검증 (서명 및 만료 시간 확인) */
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -60,6 +69,7 @@ public class JwtUtil {
         }
     }
 
+    /** Refresh Token 생성 (type 클레임 포함) */
     public String generateRefreshToken(String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshExpiration);

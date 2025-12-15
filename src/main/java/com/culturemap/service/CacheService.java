@@ -9,6 +9,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * 인메모리 캐시 서비스
+ * - 검색 결과 캐시 (TTL: 10분)
+ * - 인기 장소 캐시 (TTL: 1시간)
+ * - 최근 검색 키워드 관리 (최대 10개)
+ */
 @Service
 @Slf4j
 public class CacheService {
@@ -25,6 +31,7 @@ public class CacheService {
     private final Map<Long, LinkedList<String>> recentSearches = new ConcurrentHashMap<>();
     private static final int MAX_RECENT_SEARCHES = 10;
 
+    /** TTL 기반 캐시 엔트리 (만료 시간 자동 관리) */
     private static class CacheEntry<T> {
         private final T data;
         private final Instant expiresAt;

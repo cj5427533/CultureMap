@@ -26,6 +26,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Spring Security 설정
+ * - JWT 기반 Stateless 인증
+ * - CORS 설정
+ * - 인증 불필요 경로 설정
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -41,6 +47,12 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Security Filter Chain 설정
+     * - Stateless 세션 정책 (JWT 사용)
+     * - 인증 불필요 경로: /api/auth/**, /api/places/kakao/**, Swagger 등
+     * - JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

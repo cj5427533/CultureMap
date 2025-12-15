@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 플랜 관리 REST API 컨트롤러
+ * - 플랜 CRUD, 장소 추가, 멤버 초대
+ */
 @RestController
 @RequestMapping("/api/plans")
 @RequiredArgsConstructor

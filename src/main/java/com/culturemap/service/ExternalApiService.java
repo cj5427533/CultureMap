@@ -162,6 +162,10 @@ public class ExternalApiService {
 
     /**
      * Kakao Local API를 통해 주변 문화시설 검색 (여러 페이지 호출)
+     * - 카테고리 검색 (CT1: 문화시설)
+     * - 최대 3페이지까지 호출하여 결과 합침 (총 45개)
+     * - IP 화이트리스트 및 API 키 검증 에러 처리
+     * 
      * @param lng 경도
      * @param lat 위도
      * @param radius 반경 (미터, 기본 2000m)

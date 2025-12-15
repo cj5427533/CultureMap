@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * 플랜 관리 서비스
+ * - 플랜 CRUD, 멤버 초대, 권한 관리
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -35,6 +39,11 @@ public class PlanService {
     private final PlaceRepository placeRepository;
     private final PlanMemberRepository planMemberRepository;
 
+    /**
+     * 플랜 생성
+     * - 장소를 순서대로 추가하고 방문 시간 설정
+     * - visitOrder는 리스트 인덱스 + 1로 자동 설정
+     */
     public PlanResponse createPlan(PlanRequest request, Authentication authentication) {
         String email = ((UserDetails) authentication.getPrincipal()).getUsername();
         Member member = memberRepository.findByEmail(email)
@@ -46,7 +55,7 @@ public class PlanService {
                 .title(request.getTitle())
                 .build();
 
-        // 장소 추가
+        // 장소 추가 (순서대로 visitOrder 설정)
         IntStream.range(0, request.getPlaceIds().size()).forEach(index -> {
             Long placeId = request.getPlaceIds().get(index);
             Place place = placeRepository.findById(placeId)
@@ -99,6 +108,10 @@ public class PlanService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 플랜 조회 (권한 확인)
+     * - 소유자 또는 협업 멤버만 조회 가능
+     */
     @Transactional(readOnly = true)
     public PlanResponse getPlan(Long id, Authentication authentication) {
         String email = ((UserDetails) authentication.getPrincipal()).getUsername();
@@ -119,6 +132,11 @@ public class PlanService {
         return toResponse(plan);
     }
 
+    /**
+     * 플랜 수정
+     * - 소유자 또는 EDITOR 권한 협업 멤버만 수정 가능
+     * - 기존 장소를 모두 제거하고 새로 추가
+     */
     public PlanResponse updatePlan(Long id, PlanRequest request, Authentication authentication) {
         String email = ((UserDetails) authentication.getPrincipal()).getUsername();
         Member member = memberRepository.findByEmail(email)
@@ -240,6 +258,12 @@ public class PlanService {
         return toResponse(plan);
     }
 
+    /**
+     * 플랜 멤버 초대
+     * - 소유자만 초대 가능
+     * - OWNER/EDITOR/VIEWER 권한 설정
+     * - 중복 초대 방지
+     */
     public void inviteMember(PlanInviteRequest request, Authentication authentication) {
         String email = ((UserDetails) authentication.getPrincipal()).getUsername();
         Member inviter = memberRepository.findByEmail(email)
@@ -287,6 +311,10 @@ public class PlanService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Plan 엔티티를 PlanResponse DTO로 변환
+     * - 장소는 방문 시간 우선, 없으면 visitOrder로 정렬
+     */
     private PlanResponse toResponse(Plan plan) {
         List<PlaceResponse> places = plan.getPlanPlaces().stream()
                 .sorted((a, b) -> {

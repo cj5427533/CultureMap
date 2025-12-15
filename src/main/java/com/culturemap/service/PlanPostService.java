@@ -19,6 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 플랜 공유 게시글 서비스
+ * - 플랜을 커뮤니티에 공유
+ * - 평점 및 댓글 통계 포함
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,6 +33,10 @@ public class PlanPostService {
     private final PlanRepository planRepository;
     private final MemberRepository memberRepository;
 
+    /**
+     * 플랜을 게시글로 공유
+     * - 플랜 소유자만 공유 가능
+     */
     public PlanPostResponse createPost(PlanPostRequest request, Authentication authentication) {
         String email = ((UserDetails) authentication.getPrincipal()).getUsername();
         Member member = memberRepository.findByEmail(email)

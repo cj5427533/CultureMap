@@ -14,6 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * 인증 관련 REST API 컨트롤러
+ * - 회원가입, 로그인, 토큰 갱신
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -21,12 +25,18 @@ public class AuthController {
 
     private final MemberService memberService;
 
+    /** 회원가입 */
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
         AuthResponse response = memberService.signup(request);
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 로그인
+     * - 클라이언트 IP 추출하여 레이트 리밋 적용
+     * - 로그인 실패 시 401 또는 429 응답
+     */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody AuthRequest request,
@@ -46,6 +56,7 @@ public class AuthController {
         }
     }
 
+    /** Refresh Token을 사용한 Access Token 갱신 */
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = memberService.refreshAccessToken(request.getRefreshToken());

@@ -60,6 +60,12 @@ public class DirectionsService {
 
     private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
 
+    /**
+     * 자동차 경로 조회 (Kakao Mobility API)
+     * - 캐시 우선 조회 (TTL: 10분)
+     * - 레이트 리밋 적용 (분당 60회, 일일 400회)
+     * - 경로 좌표 파싱 및 응답 변환
+     */
     public DirectionsResponse getCarDirections(DirectionsRequest request) {
         validateRequest(request);
 
@@ -212,6 +218,11 @@ public class DirectionsService {
         return String.format("%.6f,%.6f", lng, lat);
     }
 
+    /**
+     * 레이트 리밋 적용
+     * - 분당 60회 제한
+     * - 일일 400회 제한
+     */
     private void enforceLimits() {
         // 분 단위 리셋
         Instant now = Instant.now();

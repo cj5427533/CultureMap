@@ -9,6 +9,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 레이트 리밋 서비스
+ * - 로그인 시도 제한: IP/이메일별 5분에 5회
+ * - 검색 API 호출 제한: IP별 1분에 30회
+ */
 @Service
 @Slf4j
 public class RateLimitService {

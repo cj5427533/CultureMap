@@ -28,6 +28,12 @@ public class PlaceService {
     @Autowired(required = false)
     private ExternalApiService externalApiService;
 
+    /**
+     * 장소 검색 (캐시 우선)
+     * - 캐시 히트 시 즉시 반환
+     * - 캐시 미스 시 DB 검색 후 캐시 저장 (TTL: 10분)
+     * - 최근 검색 키워드 저장
+     */
     @Transactional(readOnly = true)
     public List<PlaceResponse> searchPlaces(String keyword, Long userId) {
         // 캐시 확인 (키워드가 있고 사용자가 로그인한 경우)
