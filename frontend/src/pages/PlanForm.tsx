@@ -87,7 +87,6 @@ export const PlanForm = () => {
       setPlaces(data || []);
     } catch (err) {
       console.error('장소 로드 실패:', err);
-      const errorMessage = err instanceof Error ? err.message : '장소 목록을 불러오는데 실패했습니다.';
       // 장소 로드 실패는 조용히 처리 (빈 배열로 설정)
       setPlaces([]);
     }
@@ -113,7 +112,7 @@ export const PlanForm = () => {
   };
 
   // 카카오 장소를 Place로 변환하여 추가
-  const handleAddKakaoPlace = async (kakaoPlace: KakaoPlace) => {
+  const handleAddKakaoPlace = useCallback(async (kakaoPlace: KakaoPlace) => {
     try {
       let savedPlace: Place;
       
@@ -197,7 +196,7 @@ export const PlanForm = () => {
         alert('플랜에 장소가 추가되었습니다!');
       }
     }
-  };
+  }, [selectedPlaces, formData]);
 
   const handleAddPlace = (place: Place) => {
     if (!selectedPlaces.find(p => p.id === place.id)) {

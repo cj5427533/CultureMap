@@ -151,7 +151,6 @@ export const PostDetail = () => {
       setComments(data || []);
     } catch (err) {
       console.error('댓글 로드 실패:', err);
-      const errorMessage = err instanceof Error ? err.message : '댓글을 불러오는데 실패했습니다.';
       // 댓글 로드 실패는 사용자에게 알리지 않고 빈 배열로 처리
       setComments([]);
     } finally {
