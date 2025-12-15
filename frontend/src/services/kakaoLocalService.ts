@@ -89,9 +89,9 @@ export const kakaoLocalService = {
         url: err.config?.url,
       });
       
-      // 네트워크 에러 처리
+      // 네트워크 / CORS 등으로 브라우저에서 요청이 차단된 경우
       if (err.code === 'ERR_NETWORK' || err.message === 'Network Error' || err.code === 'ERR_CONNECTION_REFUSED') {
-        throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
+        throw new Error('서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도하거나 네트워크/브라우저(CORS) 설정을 확인해주세요.');
       }
       
       if (err.response?.status === 403) {
@@ -150,9 +150,9 @@ export const kakaoLocalService = {
         url: err.config?.url,
       });
       
-      // 네트워크 에러 처리
+      // 네트워크 / CORS 등으로 브라우저에서 요청이 차단된 경우
       if (err.code === 'ERR_NETWORK' || err.message === 'Network Error' || err.code === 'ERR_CONNECTION_REFUSED') {
-        throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
+        throw new Error('서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도하거나 네트워크/브라우저(CORS) 설정을 확인해주세요.');
       }
       
       if (err.response?.status === 403) {
