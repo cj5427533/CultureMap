@@ -2,12 +2,18 @@ package com.culturemap.service;
 
 import com.culturemap.domain.Member;
 import com.culturemap.domain.RefreshToken;
+import com.culturemap.domain.Plan;
 import com.culturemap.dto.AuthRequest;
 import com.culturemap.dto.AuthResponse;
 import com.culturemap.dto.SignupRequest;
+import com.culturemap.repository.CommentRepository;
 import com.culturemap.repository.HistoryRepository;
 import com.culturemap.repository.MemberRepository;
+import com.culturemap.repository.PlanMemberRepository;
+import com.culturemap.repository.PlanPostRepository;
+import com.culturemap.repository.PlanRepository;
 import com.culturemap.repository.RefreshTokenRepository;
+import com.culturemap.repository.RatingRepository;
 import com.culturemap.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +39,11 @@ public class MemberService {
     private final HistoryInitService historyInitService;
     private final HistoryRepository historyRepository;
     private final RateLimitService rateLimitService;
+    private final PlanRepository planRepository;
+    private final PlanPostRepository planPostRepository;
+    private final PlanMemberRepository planMemberRepository;
+    private final CommentRepository commentRepository;
+    private final RatingRepository ratingRepository;
     
     private static final String TARGET_EMAIL = "cj5427533@o365.jeiu.ac.kr";
 
@@ -186,6 +198,45 @@ public class MemberService {
                 .nickname(member.getNickname())
                 .role(member.getRole() != null ? member.getRole() : "USER")
                 .build();
+    }
+
+    /**
+     * 현재 인증된 사용자의 계정 및 관련 데이터를 삭제
+     * - 댓글, 평점, 협업 플랜 참여 기록, 소유 플랜/게시글, 히스토리, 토큰 순으로 정리
+     */
+    public void deleteCurrentMember(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("인증 정보가 없습니다");
+        }
+
+        String email = ((UserDetails) authentication.getPrincipal()).getUsername();
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+        Long memberId = member.getId();
+
+        // 다른 사용자의 콘텐츠에 남긴 기록 정리
+        commentRepository.deleteByMemberId(memberId);
+        ratingRepository.deleteByMemberId(memberId);
+
+        // 협업 플랜 참여 기록 제거
+        planMemberRepository.deleteByMemberId(memberId);
+
+        // 사용자가 소유한 플랜 및 공유 게시글 삭제
+        List<Plan> myPlans = planRepository.findByMember(member);
+        if (!myPlans.isEmpty()) {
+            List<Long> planIds = myPlans.stream()
+                    .map(Plan::getId)
+                    .toList();
+            planPostRepository.deleteByPlanIdIn(planIds);
+            planRepository.deleteAll(myPlans);
+        }
+
+        // 히스토리 및 토큰 삭제
+        historyRepository.deleteByMemberId(memberId);
+        refreshTokenRepository.deleteByMemberId(memberId);
+
+        // 최종 회원 삭제
+        memberRepository.delete(member);
     }
 
     /**

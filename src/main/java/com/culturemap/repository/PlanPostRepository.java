@@ -17,5 +17,7 @@ public interface PlanPostRepository extends JpaRepository<PlanPost, Long> {
     @EntityGraph(attributePaths = {"plan", "plan.member", "plan.planPlaces", "plan.planPlaces.place"})
     @Query("SELECT p FROM PlanPost p WHERE p.id = :id")
     Optional<PlanPost> findByIdWithDetails(Long id);
+    
+    void deleteByPlanIdIn(List<Long> planIds);
 }
 

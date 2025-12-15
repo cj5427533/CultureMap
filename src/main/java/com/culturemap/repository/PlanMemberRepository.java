@@ -20,4 +20,5 @@ public interface PlanMemberRepository extends JpaRepository<PlanMember, Long> {
     Optional<PlanMember> findByPlanIdAndMemberId(Long planId, Long memberId);
     boolean existsByPlanIdAndMemberId(Long planId, Long memberId);
     void deleteByPlanId(Long planId);
+    void deleteByMemberId(Long memberId);
 }

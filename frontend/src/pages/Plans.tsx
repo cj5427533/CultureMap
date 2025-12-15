@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDebounce } from '../hooks/useDebounce';
 import { planService } from '../services/planService';
 import { historyService } from '../services/historyService';
+import { authService } from '../services/authService';
 import type { Plan, History } from '../types/index';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
 export const Plans = () => {
+  const navigate = useNavigate();
   const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +69,18 @@ export const Plans = () => {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!confirm('정말 탈퇴하시겠습니까?\n탈퇴 시 모든 플랜과 게시글, 기록이 삭제됩니다.')) return;
+    try {
+      await authService.deleteAccount();
+      alert('탈퇴가 완료되었습니다. 이용해주셔서 감사합니다.');
+      navigate('/');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '탈퇴에 실패했습니다.';
+      alert(errorMessage);
+    }
+  };
+
   if (loading) return <div className="text-center py-12">로딩 중...</div>;
 
   return (
@@ -90,6 +104,13 @@ export const Plans = () => {
                 공유 게시판
               </Button>
             </Link>
+            <Button
+              variant="danger"
+              onClick={handleWithdraw}
+              className="w-full sm:w-auto shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+            >
+              회원 탈퇴
+            </Button>
           </div>
         </div>
 

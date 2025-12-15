@@ -71,6 +71,17 @@ export const authService = {
     localStorage.removeItem('user');
   },
 
+  deleteAccount: async (): Promise<void> => {
+    try {
+      await api.delete('/members/me');
+      authService.logout();
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = err.response?.data?.message || err.message || '탈퇴에 실패했습니다.';
+      throw new Error(errorMessage);
+    }
+  },
+
   refreshToken: async (): Promise<AuthResponse | null> => {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) {
