@@ -113,8 +113,8 @@ public class SecurityConfig {
     /**
      * CORS 설정
      * - 허용 Origin: http://localhost:5173, https://<프론트_배포_도메인> (환경변수로 설정 가능)
-     * - 허용 메서드: GET, POST, PUT, DELETE, OPTIONS
-     * - 허용 헤더: Authorization, Content-Type
+     * - 허용 메서드: GET, POST, PUT, DELETE, OPTIONS, PATCH
+     * - 허용 헤더: Authorization, Content-Type, X-Requested-With 등
      * - allowCredentials: true
      */
     @Bean
@@ -129,14 +129,27 @@ public class SecurityConfig {
                 .toList();
         configuration.setAllowedOrigins(origins);
         
-        // 허용 메서드
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // 허용 메서드 (PATCH 추가)
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         
-        // 허용 헤더
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        // 허용 헤더 (모든 일반적인 헤더 포함)
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization", 
+            "Content-Type", 
+            "X-Requested-With",
+            "Accept",
+            "Origin",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers"
+        ));
         
         // 노출 헤더
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setExposedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
+        ));
         
         // 인증 정보 허용
         configuration.setAllowCredentials(true);
